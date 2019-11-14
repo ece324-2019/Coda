@@ -12,7 +12,7 @@ class MultiLP(nn.Module):
         super(MultiLP, self).__init__()
         self.fc1 = nn.Linear(input_size, neurons)
         self.fc2 = nn.Linear(neurons, neurons)
-        self.fc3 = nn.Linear(neurons, 13)
+        self.fc3 = nn.Linear(neurons, 11)
 
     def forward(self, features):
         x = F.relu(self.fc1(features.float()))
