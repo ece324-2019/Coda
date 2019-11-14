@@ -15,7 +15,6 @@ from model import MusicDataset
 
 import argparse
 from time import time
-import ipdb
 
 torch.manual_seed(0)
 
@@ -60,6 +59,32 @@ def load_data():
 
 
 def main(args):
+
+    def evaluate(model, iter):
+        total_corr = 0
+        total_num = 0
+        running_loss = 0
+        cnt = 0
+        for i, batch in enumerate(iter):
+            if i < int((0.1 * len(iter.dataset)) / args.batch_size):
+                cnt += 1
+                feat, labels = data
+                if torch.cuda.is_available():
+                    feat, labels = feat.to(device), labels.to(device)
+
+                predict = model(feat).float()
+
+                # Calculate loss
+                loss = loss_func(predict, labels.long())
+                running_loss += loss
+
+                # Calculate correct labels and accuracy
+                _, predicted = torch.max(predict.data, 1)
+                correct = (predicted == labels).sum().item()
+                total_num += labels.size(0)
+                total_corr += correct
+        return total_corr / total_num, running_loss / cnt
+
     train_loader, train_len = load_data()
     model, loss_func, optimizer = load_model(args, train_len)
 
@@ -77,40 +102,29 @@ def main(args):
         total_count = 0.0
 
         for j, data in enumerate(train_loader):
-            # ipdb.set_trace()
             feat, labels = data
             if torch.cuda.is_available():
                 feat, labels = feat.to(device), labels.to(device)
 
             optimizer.zero_grad()
             predict = model(feat.unsqueeze(1)).float()
-            # print(labels)
             loss = loss_func(predict, labels.long())
             loss.backward()
             optimizer.step()
 
-            _, predicted = torch.max(predict.data, 1)
-            correct = (predicted == labels).sum().item()
-            train_acc = (correct / labels.size(0))
-
-            # train_acc += int(((predict > 0.5).squeeze().float() == labels).sum())
-            total_count += args.batch_size
-            train_loss += loss.item()
-
-        running_accuracy.append(train_acc / total_count)
-        running_loss.append(train_loss / float(j + 1))
-
         if epoch % args.eval_every == args.eval_every - 1:
+            model = model.eval()
+            train_acc, train_loss = evaluate(model, train_loader)
             # print("Epoch: %d | Training accuracy: %f | Training loss: %f | Val accuracy: %f | Val loss: %f"
             # % (epoch, running_accuracy[-1], running_loss[-1], running_valid_accuracy[-1], running_valid_loss[-1]))
             print("Epoch: %d | Training accuracy: %f | Training loss: %f"
-                  % (epoch + 1, running_accuracy[-1], running_loss[-1]))
+                  % (epoch + 1, train_acc, train_loss))
 
     end = time()
-    print("====FINAL VALUES====")
+    # print("====FINAL VALUES====")
     # print("Test accuracy: %f | Test loss: %f" % (test_accuracy, test_loss))
-    print("Training acc: %f | Valid acc: %f | Time: %f" % (
-    max(running_accuracy), max(running_valid_accuracy), end - start))
+    # print("Training acc: %f | Valid acc: %f | Time: %f" % (
+    # max(train_acc), max(running_valid_accuracy), end - start))
     # print("Training loss: %f | Valid loss: %f " % (min(running_loss), min(running_valid_loss)))
     # print("overfit acc: %f | overfit loss: %f" % (max(overfit_accuracy), min(overfit_loss)))
 
