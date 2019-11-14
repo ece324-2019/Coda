@@ -20,22 +20,24 @@ import ipdb
 
 instruments_list = ["cel", "cla", "flu", "gac", "gel", "org", "pia", "sax", "tru", "vio", "voi"]
 
-def load_model(args):
+def load_model(args, train_len):
         # model = ConvNN()
-        model = MultiLP(len(instruments_list))
+        model = MultiLP(train_len)
         loss_func = torch.nn.MSELoss()
         optimizer = torch.optim.SGD(model.parameters(),lr=args.lr)
  
         return model, loss_func, optimizer
 
 def load_data(batch_size):
-        data = pd.read_csv('data/Part1.csv',names=["normalized", "instruments"])
+        data = pd.read_pickle('data/part1.pkl')
+        data.columns = ["normalized", "instruments"]
         # print(data.head())
         # print("shape: ", data.shape)
         # print(data["instruments"].value_counts())
 
         labels = data["instruments"]
         music_train = data["normalized"].values
+        music_train = music_train[-8:-1]
         ipdb.set_trace()
         # Encode instruments
         oneh_encoder = OneHotEncoder(categories="auto")
@@ -47,13 +49,13 @@ def load_data(batch_size):
         train_data = MusicDataset(music_train, label_oneh)
         train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
 
-        return train_loader
+        return train_loader, len(music_train[0][0])
 
 def main(args):
-        
-        model, loss_func, optimizer = load_model(args)
-        train_loader = load_data(args.batch_size)
 
+        train_loader, train_len = load_data(args.batch_size)
+        model, loss_func, optimizer = load_model(args, train_len)
+        
         running_loss = []
         running_accuracy = []
         # running_valid_loss = []
@@ -67,9 +69,8 @@ def main(args):
                 train_loss = 0.0
                 total_count = 0.0
 
-                # ipdb.set_trace()
-
                 for j, data in enumerate(train_loader):
+                        # ipdb.set_trace()
                         feat, labels = data
                 
                         optimizer.zero_grad()
