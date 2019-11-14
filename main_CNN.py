@@ -21,6 +21,11 @@ torch.manual_seed(0)
 
 instruments_list = ["cel", "cla", "flu", "gac", "gel", "org", "pia", "sax", "tru", "vio", "voi"]
 
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+    torch.set_default_tensor_type(torch.cuda.FloatTensor)
+    print('Using CUDA')
+
 
 def load_model(args, train_len):
     # model = ConvNN()
@@ -74,6 +79,7 @@ def main(args):
         for j, data in enumerate(train_loader):
             # ipdb.set_trace()
             feat, labels = data
+            feat, labels = feat.to(device), labels.to(device)
 
             optimizer.zero_grad()
             predict = model(feat.unsqueeze(1)).float()
