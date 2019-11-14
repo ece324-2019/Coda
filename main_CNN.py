@@ -30,6 +30,8 @@ def load_model(args, train_len):
     # model = ConvNN()
     # model = MultiLP(train_len)
     model = ConvNN()
+    if torch.cuda.is_available():
+        model.cuda()
     loss_func = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
 
@@ -115,6 +117,7 @@ def main(args):
         if epoch % args.eval_every == args.eval_every - 1:
             model = model.eval()
             train_acc, train_loss = evaluate(model, train_loader)
+            model.train()
             # print("Epoch: %d | Training accuracy: %f | Training loss: %f | Val accuracy: %f | Val loss: %f"
             # % (epoch, running_accuracy[-1], running_loss[-1], running_valid_accuracy[-1], running_valid_loss[-1]))
             print("Epoch: %d | Training accuracy: %f | Training loss: %f"
