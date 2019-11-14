@@ -17,6 +17,7 @@ from model import MusicDataset
 import argparse
 from time import time
 import ipdb
+torch.manual_seed(0)
 
 instruments_list = ["cel", "cla", "flu", "gac", "gel", "org", "pia", "sax", "tru", "vio", "voi"]
 
@@ -28,32 +29,32 @@ def load_model(args, train_len):
  
         return model, loss_func, optimizer
 
-def load_data(batch_size):
+def load_data():
         data = pd.read_pickle('data/part1.pkl')
         data.columns = ["normalized", "instruments"]
         # print(data.head())
         # print("shape: ", data.shape)
         # print(data["instruments"].value_counts())
-
-        labels = data["instruments"]
+        label_encoder = LabelEncoder()
+        data['instruments'] = label_encoder.fit_transform(data['instruments'])
+        labels = data["instruments"].values
         music_train = data["normalized"].values
-        music_train = music_train[-8:-1]
-        ipdb.set_trace()
+        # music_train = music_train[-8:-1]
+        # ipdb.set_trace()
         # Encode instruments
-        oneh_encoder = OneHotEncoder(categories="auto")
-       
-        # print(labels["instruments"])
-        label_oneh = oneh_encoder.fit_transform(labels.values.reshape(-1, 1)).toarray()
-        # print(label_oneh)
-        
-        train_data = MusicDataset(music_train, label_oneh)
+        oneh_encoder = OneHotEncoder(categories="auto", sparse=False)
+        # labels = oneh_encoder.fit_transform(labels.values.reshape(-1, 1)).toarray()
+        labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
+
+        train_data = MusicDataset(music_train, labels)
         train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
 
-        return train_loader, len(music_train[0][0])
+        return train_loader, (music_train[0].shape[0] * music_train[0].shape[1])
 
 def main(args):
 
-        train_loader, train_len = load_data(args.batch_size)
+        train_loader, train_len = load_data()
+        print(train_len)
         model, loss_func, optimizer = load_model(args, train_len)
         
         running_loss = []
