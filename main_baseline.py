@@ -27,8 +27,9 @@ if torch.cuda.is_available():
 
 instruments_list = ["cel", "cla", "flu", "gac", "gel", "org", "pia", "sax", "tru", "vio", "voi"]
 
+
+
 def load_model(args, train_len):
-        # model = ConvNN()
         model = MultiLP(train_len)
         loss_func = torch.nn.MSELoss()
         optimizer = torch.optim.SGD(model.parameters(),lr=args.lr)
@@ -43,15 +44,13 @@ def load_data(batch_size):
 
         labels = data["instruments"]
         music_train = data["normalized"].values
-        # music_train = music_train[-8:-1]
+        music_train = music_train
         music_train = np.stack(music_train).reshape(-1, 1025 * 130)    
         
         # Encode instruments
         oneh_encoder = OneHotEncoder(categories="auto")
-       
-        # print(labels["instruments"])
         label_oneh = oneh_encoder.fit_transform(labels.values.reshape(-1, 1)).toarray()
-        # label_oneh = label_oneh[-8:-1]
+        label_oneh = label_oneh
         
         train_data = MusicDataset(music_train, label_oneh)
         train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
@@ -80,7 +79,7 @@ def main(args):
                         print("Starting...")
 
                 for j, data in enumerate(train_loader):
-                        # ipdb.set_trace()
+                        
                         feat, labels = data
                         if torch.cuda.is_available():
                                 feat, labels = feat.to(device), labels.to(device)
@@ -92,12 +91,14 @@ def main(args):
                         loss.backward()
                         optimizer.step()
 
-                        train_acc += (predict.max(1)[1].float() == labels.max(1)[1].float()).sum().float()
+                        train_acc += (predict.max(1)[1].float() == labels.max(1)[1].float()).sum().float().item()
+                        # ipdb.set_trace()
                         total_count += args.batch_size
                         train_loss += loss.item()
             
+                # ipdb.set_trace()
                 running_accuracy.append(train_acc/total_count)
-                running_loss.append(train_loss/float(j+1)) 
+                running_loss.append(train_loss)  #/float(j+1)
                 nRec.append(epoch)
 
                 if epoch % args.eval_every == args.eval_every-1:
@@ -112,56 +113,55 @@ def main(args):
         # print("Test accuracy: %f | Test loss: %f" % (test_accuracy, test_loss))  
         print("Training acc: %f" % (max(running_accuracy)))
         print("Training loss: %f" % (min(running_loss)))
-        # print("overfit acc: %f | overfit loss: %f" % (max(overfit_accuracy), min(overfit_loss)))
 
 
+        # plt.plot(running_accuracy, label="Training Error")
+        # plt.title("Training Loss")
+        # plt.xlabel("Epochs")
+        # plt.xlim(left=0)
+        # plt.ylabel("Loss")
+        # plt.legend(loc="upper right")
+        # plt.savefig("baseline.png")
+        # plt.show()
+        # plt.clf()
+
+        
         fig = plt.figure()
         ax = plt.subplot(1, 2, 1)
-        ax.plot(nRec, running_loss, label='Training')
-        # ax.plot(nRec,running_valid_loss, label='Validation')
-        plt.title('Training Loss vs. epoch')
+        plt.plot(nRec, running_accuracy, label='Training')
+        plt.title('Training Accuracy vs. Epoch')
         plt.xlabel("Epoch")
-        plt.ylabel("Loss")
+        plt.ylabel("Accuracy")
         ax.legend()
 
         bx = plt.subplot(1, 2, 2)
-        bx.plot(nRec, running_accuracy, label='Training')
-        # bx.plot(nRec,running_valid_accuracy, label='Validation')
-        plt.title('Training Accuracy vs. epoch')
+        bx.plot(nRec, running_loss, label='Training')
+        plt.title('Training Loss vs. Epoch')
         plt.xlabel("Epoch")
-        plt.ylabel("Accuracy")
+        plt.ylabel("Loss")
         bx.legend()
         plt.show()
+        plt.savefig("baseline.png")
+        plt.clf()
+
+        # # plt.figure(figsize=(9, 3))
+        # # plt.subplot(121)
+        # plt.plot(nRec, running_accuracy)
+        # # plt.subplot(122)
+        # # plt.plot(nRec, running_loss)
+        # # plt.title('Training Accuracy and Loss vs. Epoch')
+        # plt.show()
+
 
 
 if __name__ == '__main__':
         parser = argparse.ArgumentParser()
-        parser.add_argument('--batch-size', type=int, default=64)
+        parser.add_argument('--batch-size', type=int, default=6)
         parser.add_argument('--lr', type=float, default=0.001)
-        parser.add_argument('--epochs', type=int, default=100)
+        parser.add_argument('--epochs', type=int, default=20)
         parser.add_argument('--eval_every', type=int, default=2)
 
         args = parser.parse_args()
 
         main(args)
-
-# Remove instrument column and store in new variable
-# instrument_oneh = data["instruments"]
-# instrument_oneh = instrument_oneh.to_numpy()
-# data = data.drop(columns="instruments")
-
-# one_hot = []
-# one_hot.append(oneh_encoder.fit_transform(data["instruments"].values.reshape(-1, 1)).toarray())
-# one_hot = np.concatenate(one_hot, axis=1)
-# print("one hot", one_hot)
-# print("one hot shape", one_hot.shape)
-
-# oneh_df = pd.DataFrame(one_hot) 
-# data = data.drop(columns="instruments")
-# data = pd.concat((data, oneh_df), axis=1)
-
-
-
-
-
 
