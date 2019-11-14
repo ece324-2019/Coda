@@ -34,19 +34,18 @@ def load_data(batch_size):
         # print(data.head())
         # print("shape: ", data.shape)
         # print(data["instruments"].value_counts())
-
-        labels = data["instruments"]
+        label_encoder = LabelEncoder()
+        data['instruments'] = label_encoder.fit_transform(data['instruments'])
+        labels = data["instruments"].values
         music_train = data["normalized"].values
-        music_train = music_train[-8:-1]
-        ipdb.set_trace()
+        # music_train = music_train[-8:-1]
+        # ipdb.set_trace()
         # Encode instruments
-        oneh_encoder = OneHotEncoder(categories="auto")
-       
-        # print(labels["instruments"])
-        label_oneh = oneh_encoder.fit_transform(labels.values.reshape(-1, 1)).toarray()
-        # print(label_oneh)
-        
-        train_data = MusicDataset(music_train, label_oneh)
+        oneh_encoder = OneHotEncoder(categories="auto", sparse=False)
+        # labels = oneh_encoder.fit_transform(labels.values.reshape(-1, 1)).toarray()
+        labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
+
+        train_data = MusicDataset(music_train, labels)
         train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
 
         return train_loader, len(music_train[0][0])
