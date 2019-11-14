@@ -72,7 +72,7 @@ def main(args):
                 if torch.cuda.is_available():
                     feat, labels = feat.to(device), labels.to(device)
 
-                predict = model(feat).float()
+                predict = model(feat.unsqueeze(1)).float()
 
                 # Calculate loss
                 loss = loss_func(predict, labels.long())
@@ -95,7 +95,7 @@ def main(args):
     nRec = []
 
     start = time()
-
+    print('Starting training')
     for epoch in range(args.epochs):
         train_acc = 0.0
         train_loss = 0.0
@@ -151,8 +151,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--eval_every', type=int, default=10)
+    parser.add_argument('--epochs', type=int, default=15)
+    parser.add_argument('--eval_every', type=int, default=1)
 
     args = parser.parse_args()
 

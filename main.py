@@ -23,9 +23,11 @@ instruments_list = ["cel", "cla", "flu", "gac", "gel", "org", "pia", "sax", "tru
 
 def load_model(args, train_len):
         # model = ConvNN()
-        model = MultiLP(train_len)
-        loss_func = torch.nn.MSELoss()
-        optimizer = torch.optim.SGD(model.parameters(),lr=args.lr)
+        # model = MultiLP(train_len)
+        model = ConvNN()
+        loss_func = nn.BCEWithLogitsLoss()
+
+        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
  
         return model, loss_func, optimizer
 
@@ -44,8 +46,7 @@ def load_data():
         # Encode instruments
         oneh_encoder = OneHotEncoder(categories="auto", sparse=False)
         # labels = oneh_encoder.fit_transform(labels.values.reshape(-1, 1)).toarray()
-        labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
-
+        # labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
         train_data = MusicDataset(music_train, labels)
         train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
 
@@ -54,7 +55,6 @@ def load_data():
 def main(args):
 
         train_loader, train_len = load_data()
-        print(train_len)
         model, loss_func, optimizer = load_model(args, train_len)
         
         running_loss = []
@@ -75,21 +75,22 @@ def main(args):
                         feat, labels = data
                 
                         optimizer.zero_grad()
-                        predict = model(feat).float()
-                
-                        loss = loss_func(predict.squeeze(), labels.float())
+                        predict = model(feat.unsqueeze(1)).float()
+                        # print(labels)
+                        loss = loss_func(predict, labels.long())
                         loss.backward()
                         optimizer.step()
 
-                        # _, predicted = torch.max(predict.data, 1)
-                        # trainAcc = (labels.nonzero()[:,1] == predicted).sum().item() /batch_size
+                        _, predicted = torch.max(predict.data, 1)
+                        correct = (predicted == labels).sum().item()
+                        train_acc = (correct / labels.size(0))
 
-                        train_acc += int(((predict > 0.5).squeeze().float() == labels).sum())
+                        # train_acc += int(((predict > 0.5).squeeze().float() == labels).sum())
                         total_count += args.batch_size
                         train_loss += loss.item()
             
                 running_accuracy.append(train_acc/total_count)
-                running_loss.append(train_loss/float(i+1)) 
+                running_loss.append(train_loss/float(j+1))
 
                 if epoch % args.eval_every == args.eval_every-1:
                         # print("Epoch: %d | Training accuracy: %f | Training loss: %f | Val accuracy: %f | Val loss: %f"
