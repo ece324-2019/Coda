@@ -18,6 +18,13 @@ import argparse
 from time import time
 import ipdb
 
+torch.manual_seed(0)
+
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+    torch.set_default_tensor_type(torch.cuda.FloatTensor)
+    print('Using CUDA')
+
 instruments_list = ["cel", "cla", "flu", "gac", "gel", "org", "pia", "sax", "tru", "vio", "voi"]
 
 def load_model(args, train_len):
@@ -75,7 +82,9 @@ def main(args):
                 for j, data in enumerate(train_loader):
                         # ipdb.set_trace()
                         feat, labels = data
-                
+                        if torch.cuda.is_available():
+                                feat, labels = feat.to(device), labels.to(device)
+
                         optimizer.zero_grad()
                         predict = model(feat).float()
                 
