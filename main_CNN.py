@@ -38,7 +38,7 @@ def load_model(args, train_len):
 
 
 def load_data():
-    data = pd.read_pickle('data/part1.pkl')
+    data = pd.read_pickle('part1.pkl')
     data.columns = ["normalized", "instruments"]
     # print(data.head())
     # print("shape: ", data.shape)
@@ -79,7 +79,8 @@ def main(args):
         for j, data in enumerate(train_loader):
             # ipdb.set_trace()
             feat, labels = data
-            feat, labels = feat.to(device), labels.to(device)
+            if torch.cuda.is_available():
+                feat, labels = feat.to(device), labels.to(device)
 
             optimizer.zero_grad()
             predict = model(feat.unsqueeze(1)).float()
