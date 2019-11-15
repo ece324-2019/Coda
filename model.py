@@ -32,13 +32,22 @@ class ConvNN(nn.Module):
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
-        print(x.shape)
         x = x.view(-1,50*1*1)
-        print(x.shape)
         x = F.relu(self.fc1(x))
-        print(x.shape)
         return x
 
+
+class RNN(nn.Module):
+    def __init__(self, embedding_dim, vocab, hidden_dim):
+        super(RNN, self).__init__()
+        self.gru = nn.GRU(embedding_dim, hidden_dim)
+
+        self.fc = nn.Linear(embedding_dim, 1)
+
+    def forward(self, x, lengths):
+        packed_output, hidden = self.gru(packed)
+        hidden = torch.sigmoid(self.fc(hidden.squeeze(0))).squeeze(1)
+        return hidden
 
 
 class MusicDataset(data.Dataset):

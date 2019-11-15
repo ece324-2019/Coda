@@ -32,7 +32,7 @@ def load_model(args, train_len):
     model = ConvNN()
     if torch.cuda.is_available():
         model.cuda()
-    loss_func = torch.nn.BCEWithLogitsLoss()
+    loss_func = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
 
     return model, loss_func, optimizer
@@ -53,7 +53,7 @@ def load_data():
     # Encode instruments
     oneh_encoder = OneHotEncoder(categories="auto", sparse=False)
     # labels = oneh_encoder.fit_transform(labels.values.reshape(-1, 1)).toarray()
-    labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
+    # labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
     train_data = MusicDataset(music_train, labels)
     overfit_data = MusicDataset(music_train[-50:], labels[-50:])
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
@@ -77,9 +77,8 @@ def main(args):
                     feat, labels = feat.to(device), labels.to(device)
 
                 predict = model(feat.unsqueeze(1)).float()
-
                 # Calculate loss
-                loss = loss_func(predict, labels.long())
+                loss = loss_func(input=predict, target=labels)
                 print(loss)
                 running_loss += loss
 
@@ -112,9 +111,9 @@ def main(args):
                 feat, labels = feat.to(device), labels.to(device)
 
             optimizer.zero_grad()
-            predict = model(feat.unsqueeze(1)).float()
-            print(labels)
+            predict = model(feat.unsqueeze(1))
             loss = loss_func(predict, labels.long())
+            print(loss)
             loss.backward()
             optimizer.step()
 

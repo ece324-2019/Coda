@@ -39,7 +39,7 @@ def load_model(args, train_len):
         return model, loss_func, optimizer
 
 def load_data(batch_size):
-        data = pd.read_pickle('data/part1.pkl')
+        data = pd.read_pickle('part1.pkl')
         data.columns = ["normalized", "instruments"]
 
         # print(data["instruments"].value_counts())
@@ -56,6 +56,7 @@ def load_data(batch_size):
         
         train_data = MusicDataset(music_train, label_oneh)
         train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
+        print(train_loader.dataset)
 
         return train_loader, 1025 * 130
 
