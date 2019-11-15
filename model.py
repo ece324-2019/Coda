@@ -25,18 +25,18 @@ class ConvNN(nn.Module):
     def __init__(self):
         super(ConvNN, self).__init__()
         self.conv1 = nn.Conv2d(1, 50, kernel_size=(1025,2))
-        self.pool = nn.MaxPool2d(kernel_size=(1, 10))
+        self.pool = nn.MaxPool2d(kernel_size=(1, 129))
         # self.conv2 = nn.Conv2d(3, 8, 5)
 
-        self.fc1 = nn.Linear(12, 1)
+        self.fc1 = nn.Linear(50*1*1, 11)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
-        # x = x.view(-1, 8*253*29)
-        x = F.relu(self.fc1(x)).squeeze(2).squeeze(1).squeeze(2)
-        # x = F.relu(self.fc2(x))
-        # x = self.fc3(x)
-        # x = F.softmax(x, dim=1)
+        print(x.shape)
+        x = x.view(-1,50*1*1)
+        print(x.shape)
+        x = F.relu(self.fc1(x))
+        print(x.shape)
         return x
 
 
