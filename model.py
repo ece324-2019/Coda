@@ -15,9 +15,9 @@ class MultiLP(nn.Module):
         self.fc3 = nn.Linear(neurons, 11)
 
     def forward(self, features):
-        x = F.relu(self.fc1(features.float()))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
+        x = torch.sigmoid(self.fc1(features.float()))
+        x = torch.sigmoid(self.fc2(x))
+        x = self.fc3(x)
         return x
         
 
