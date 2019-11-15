@@ -170,9 +170,10 @@ def main(args):
     plt.title('Accuracy vs. epoch')
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
+    plt.ylim((0,1))
     bx.legend()
     plt.show()
-    plt.savefig("baseline.png")
+    plt.savefig("cnn.png")
     plt.clf()
 
 
