@@ -172,6 +172,8 @@ def main(args):
     plt.ylabel("Accuracy")
     bx.legend()
     plt.show()
+    plt.savefig("baseline.png")
+    plt.clf()
 
 
 if __name__ == '__main__':
