@@ -24,23 +24,19 @@ class MultiLP(nn.Module):
 class ConvNN(nn.Module):
     def __init__(self):
         super(ConvNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 3, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(3, 8, 5)
+        self.conv1 = nn.Conv2d(1, 50, kernel_size=(1025,2))
+        self.pool = nn.MaxPool2d(kernel_size=(1, 129))
+        # self.conv2 = nn.Conv2d(3, 8, 5)
 
-        self.fc1 = nn.Linear(8*253*29, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 11)
-       
+        self.fc1 = nn.Linear(50*1*1, 11)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 8*253*29)
+        print(x.shape)
+        x = x.view(-1,50*1*1)
+        print(x.shape)
         x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        # x = F.softmax(x, dim=1)
+        print(x.shape)
         return x
 
 

@@ -30,7 +30,9 @@ def load_model(args, train_len):
     # model = ConvNN()
     # model = MultiLP(train_len)
     model = ConvNN()
-    loss_func = torch.nn.CrossEntropyLoss()
+    if torch.cuda.is_available():
+        model.cuda()
+    loss_func = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
 
     return model, loss_func, optimizer
@@ -51,9 +53,11 @@ def load_data():
     # Encode instruments
     oneh_encoder = OneHotEncoder(categories="auto", sparse=False)
     # labels = oneh_encoder.fit_transform(labels.values.reshape(-1, 1)).toarray()
-    # labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
+    labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
     train_data = MusicDataset(music_train, labels)
+    overfit_data = MusicDataset(music_train[-50:], labels[-50:])
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
+    overfit_loader = DataLoader(overfit_data, shuffle=True)
 
     return train_loader, (music_train[0].shape[0] * music_train[0].shape[1])
 
@@ -65,17 +69,18 @@ def main(args):
         total_num = 0
         running_loss = 0
         cnt = 0
-        for i, batch in enumerate(iter):
-            if i < int((0.1 * len(iter.dataset)) / args.batch_size):
+        for i, data in enumerate(iter):
+            # if i < int((0.25 * len(iter.dataset)) / args.batch_size):
                 cnt += 1
                 feat, labels = data
                 if torch.cuda.is_available():
                     feat, labels = feat.to(device), labels.to(device)
 
-                predict = model(feat).float()
+                predict = model(feat.unsqueeze(1)).float()
 
                 # Calculate loss
                 loss = loss_func(predict, labels.long())
+                print(loss)
                 running_loss += loss
 
                 # Calculate correct labels and accuracy
@@ -95,7 +100,7 @@ def main(args):
     nRec = []
 
     start = time()
-
+    print('Starting training')
     for epoch in range(args.epochs):
         train_acc = 0.0
         train_loss = 0.0
@@ -108,6 +113,7 @@ def main(args):
 
             optimizer.zero_grad()
             predict = model(feat.unsqueeze(1)).float()
+            print(labels)
             loss = loss_func(predict, labels.long())
             loss.backward()
             optimizer.step()
@@ -115,6 +121,7 @@ def main(args):
         if epoch % args.eval_every == args.eval_every - 1:
             model = model.eval()
             train_acc, train_loss = evaluate(model, train_loader)
+            model.train()
             # print("Epoch: %d | Training accuracy: %f | Training loss: %f | Val accuracy: %f | Val loss: %f"
             # % (epoch, running_accuracy[-1], running_loss[-1], running_valid_accuracy[-1], running_valid_loss[-1]))
             print("Epoch: %d | Training accuracy: %f | Training loss: %f"
@@ -149,10 +156,10 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=64)
+    parser.add_argument('--batch-size', type=int, default=50)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--eval_every', type=int, default=10)
+    parser.add_argument('--epochs', type=int, default=15)
+    parser.add_argument('--eval_every', type=int, default=1)
 
     args = parser.parse_args()
 

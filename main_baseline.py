@@ -29,6 +29,10 @@ instruments_list = ["cel", "cla", "flu", "gac", "gel", "org", "pia", "sax", "tru
 
 def load_model(args, train_len):
         model = MultiLP(train_len)
+
+        if torch.cuda.is_available():
+                model.cuda()
+
         loss_func = torch.nn.CrossEntropyLoss()
         # optimizer = torch.optim.SGD(model.parameters(),lr=args.lr)
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
