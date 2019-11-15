@@ -32,7 +32,7 @@ def load_model(args, train_len):
     model = ConvNN()
     if torch.cuda.is_available():
         model.cuda()
-    loss_func = torch.nn.BCEWithLogitsLoss()
+    loss_func = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
 
     return model, loss_func, optimizer
@@ -48,12 +48,20 @@ def load_data():
     data['instruments'] = label_encoder.fit_transform(data['instruments'])
     labels = data["instruments"].values
     music_train = data["normalized"].values
+
+    music_train = np.append(music_train[:3364], music_train[3365:])
+
+    # np.savetxt('bad.csv', music_train[3364], delimiter=',')
+    # for i in range(music_train.shape[0]):
+    #     if not ((music_train[i] > -100).all() and (music_train[i] < 100).all()):
+    #         print('bad!, ', i)
+
     # music_train = music_train[-8:-1]
     # ipdb.set_trace()
     # Encode instruments
     oneh_encoder = OneHotEncoder(categories="auto", sparse=False)
     # labels = oneh_encoder.fit_transform(labels.values.reshape(-1, 1)).toarray()
-    labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
+    # labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
     train_data = MusicDataset(music_train, labels)
     overfit_data = MusicDataset(music_train[-50:], labels[-50:])
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
@@ -77,10 +85,8 @@ def main(args):
                     feat, labels = feat.to(device), labels.to(device)
 
                 predict = model(feat.unsqueeze(1)).float()
-
                 # Calculate loss
-                loss = loss_func(predict, labels.long())
-                print(loss)
+                loss = loss_func(input=predict, target=labels)
                 running_loss += loss
 
                 # Calculate correct labels and accuracy
@@ -112,8 +118,7 @@ def main(args):
                 feat, labels = feat.to(device), labels.to(device)
 
             optimizer.zero_grad()
-            predict = model(feat.unsqueeze(1)).float()
-            print(labels)
+            predict = model(feat.unsqueeze(1))
             loss = loss_func(predict, labels.long())
             loss.backward()
             optimizer.step()
@@ -121,6 +126,9 @@ def main(args):
         if epoch % args.eval_every == args.eval_every - 1:
             model = model.eval()
             train_acc, train_loss = evaluate(model, train_loader)
+            running_accuracy.append(train_acc)
+            running_loss.append(train_loss)
+            nRec.append(epoch)
             model.train()
             # print("Epoch: %d | Training accuracy: %f | Training loss: %f | Val accuracy: %f | Val loss: %f"
             # % (epoch, running_accuracy[-1], running_loss[-1], running_valid_accuracy[-1], running_valid_loss[-1]))
@@ -137,29 +145,33 @@ def main(args):
 
     fig = plt.figure()
     ax = plt.subplot(1, 2, 1)
+    plt.tight_layout()
     ax.plot(nRec, running_loss, label='Training')
     # ax.plot(nRec,running_valid_loss, label='Validation')
-    plt.title('Training Loss vs. epoch')
+    plt.title('Training Loss vs. epoch (CNN)')
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     ax.legend()
 
     bx = plt.subplot(1, 2, 2)
+    plt.tight_layout()
     bx.plot(nRec, running_accuracy, label='Training')
     # bx.plot(nRec,running_valid_accuracy, label='Validation')
-    plt.title('Training Accuracy vs. epoch')
+    plt.title('Training Accuracy vs. epoch (CNN)')
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     bx.legend()
     plt.show()
+    plt.savefig("cnn.png")
+    plt.clf()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch-size', type=int, default=50)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=15)
-    parser.add_argument('--eval_every', type=int, default=1)
+    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--eval_every', type=int, default=3)
 
     args = parser.parse_args()
 
