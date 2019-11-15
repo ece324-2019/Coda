@@ -47,9 +47,12 @@ def load_data():
     label_encoder = LabelEncoder()
     data['instruments'] = label_encoder.fit_transform(data['instruments'])
     labels = data["instruments"].values
-    music_train = data["normalized"].values
+    music_data = data["normalized"].values
 
-    music_train = np.append(music_train[:3364], music_train[3365:])
+    music_data = np.append(music_data[:3364], music_data[3365:])
+    labels = np.append(labels[:3364], labels[3365:])
+
+    train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.2, random_state=1)
 
     # np.savetxt('bad.csv', music_train[3364], delimiter=',')
     # for i in range(music_train.shape[0]):
@@ -62,12 +65,14 @@ def load_data():
     oneh_encoder = OneHotEncoder(categories="auto", sparse=False)
     # labels = oneh_encoder.fit_transform(labels.values.reshape(-1, 1)).toarray()
     # labels = oneh_encoder.fit_transform(labels.reshape(-1, 1))
-    train_data = MusicDataset(music_train, labels)
-    overfit_data = MusicDataset(music_train[-50:], labels[-50:])
-    train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
-    overfit_loader = DataLoader(overfit_data, shuffle=True)
+    train_set = MusicDataset(train_data, train_labels)
+    valid_set = MusicDataset(valid_data, valid_labels)
+    # overfit_data = MusicDataset(music_train[-50:], labels[-50:])
+    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
+    valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
+    # overfit_loader = DataLoader(overfit_data, shuffle=True)
 
-    return train_loader, (music_train[0].shape[0] * music_train[0].shape[1])
+    return train_loader, valid_loader, (music_data[0].shape[0] * music_data[0].shape[1])
 
 
 def main(args):
@@ -77,33 +82,33 @@ def main(args):
         total_num = 0
         running_loss = 0
         cnt = 0
-        for i, data in enumerate(iter):
-            # if i < int((0.25 * len(iter.dataset)) / args.batch_size):
-                cnt += 1
-                feat, labels = data
-                if torch.cuda.is_available():
-                    feat, labels = feat.to(device), labels.to(device)
+        with torch.no_grad():
+            for i, data in enumerate(iter):
+                # if i < int((0.25 * len(iter.dataset)) / args.batch_size):
+                    cnt += 1
+                    feat, labels = data
+                    if torch.cuda.is_available():
+                        feat, labels = feat.to(device), labels.to(device)
 
-                predict = model(feat.unsqueeze(1)).float()
-                # Calculate loss
-                loss = loss_func(input=predict, target=labels)
-                print(loss)
-                running_loss += loss
+                    predict = model(feat.unsqueeze(1)).float()
+                    # Calculate loss
+                    loss = loss_func(input=predict, target=labels)
+                    running_loss += loss
 
-                # Calculate correct labels and accuracy
-                _, predicted = torch.max(predict.data, 1)
-                correct = (predicted == labels).sum().item()
-                total_num += labels.size(0)
-                total_corr += correct
+                    # Calculate correct labels and accuracy
+                    _, predicted = torch.max(predict.data, 1)
+                    correct = (predicted == labels).sum().item()
+                    total_num += labels.size(0)
+                    total_corr += correct
         return total_corr / total_num, running_loss / cnt
 
-    train_loader, train_len = load_data()
+    train_loader, valid_loader, train_len = load_data()
     model, loss_func, optimizer = load_model(args, train_len)
 
-    running_loss = []
-    running_accuracy = []
-    # running_valid_loss = []
-    running_valid_accuracy = []
+    trainAccRec = []
+    trainLossRec = []
+    validAccRec = []
+    validLossRec = []
     nRec = []
 
     start = time()
@@ -121,18 +126,23 @@ def main(args):
             optimizer.zero_grad()
             predict = model(feat.unsqueeze(1))
             loss = loss_func(predict, labels.long())
-            print(loss)
             loss.backward()
             optimizer.step()
 
         if epoch % args.eval_every == args.eval_every - 1:
             model = model.eval()
             train_acc, train_loss = evaluate(model, train_loader)
+            trainAccRec.append(train_acc)
+            trainLossRec.append(train_loss)
+            val_acc, val_loss = evaluate(model, valid_loader)
+            validAccRec.append(val_acc)
+            validLossRec.append(val_loss)
+            nRec.append(epoch)
             model.train()
             # print("Epoch: %d | Training accuracy: %f | Training loss: %f | Val accuracy: %f | Val loss: %f"
             # % (epoch, running_accuracy[-1], running_loss[-1], running_valid_accuracy[-1], running_valid_loss[-1]))
-            print("Epoch: %d | Training accuracy: %f | Training loss: %f"
-                  % (epoch + 1, train_acc, train_loss))
+            print("Epoch: %d | Training accuracy: %f | Training loss: %f | Val accuracy: %f | Val loss: %f"
+                  % (epoch + 1, train_acc, train_loss, val_acc, val_loss))
 
     end = time()
     # print("====FINAL VALUES====")
@@ -144,17 +154,20 @@ def main(args):
 
     fig = plt.figure()
     ax = plt.subplot(1, 2, 1)
-    ax.plot(nRec, running_loss, label='Training')
-    # ax.plot(nRec,running_valid_loss, label='Validation')
-    plt.title('Training Loss vs. epoch')
+    fig.tight_layout()
+    ax.plot(nRec, trainLossRec, label='Training')
+    ax.plot(nRec, validLossRec, label='Validation')
+    plt.title('Loss vs. epoch')
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     ax.legend()
 
     bx = plt.subplot(1, 2, 2)
-    bx.plot(nRec, running_accuracy, label='Training')
+    fig.tight_layout()
+    bx.plot(nRec, trainAccRec, label='Training')
+    bx.plot(nRec, validAccRec, label='Validation')
     # bx.plot(nRec,running_valid_accuracy, label='Validation')
-    plt.title('Training Accuracy vs. epoch')
+    plt.title('Accuracy vs. epoch')
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     bx.legend()
@@ -164,9 +177,9 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch-size', type=int, default=50)
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=15)
-    parser.add_argument('--eval_every', type=int, default=1)
+    parser.add_argument('--lr', type=float, default=0.0001)
+    parser.add_argument('--epochs', type=int, default=21)
+    parser.add_argument('--eval_every', type=int, default=3)
 
     args = parser.parse_args()
 
