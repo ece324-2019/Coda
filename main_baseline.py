@@ -2,13 +2,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+
 
 from model import ConvNN
 from model import MultiLP
@@ -40,7 +41,7 @@ def load_model(args, train_len):
         return model, loss_func, optimizer
 
 def load_data(batch_size):
-        data = pd.read_pickle('part1.pkl')
+        data = pd.read_pickle('data/data.pkl')
         data.columns = ["normalized", "instruments"]
         data = data.sample(frac=1).reset_index(drop=True)
 
@@ -48,8 +49,8 @@ def load_data(batch_size):
 
         labels = data["instruments"]
         music_train = data["normalized"].values
-        music_train = music_train
-        music_train = np.stack(music_train).reshape(-1, 1025 * 130)    
+        music_train = music_train[:50]
+        music_train = np.stack(music_train[:50]).reshape(-1, 1025 * 130)    
         
         # Encode instruments
         oneh_encoder = OneHotEncoder(categories="auto")
@@ -57,11 +58,9 @@ def load_data(batch_size):
         label_oneh = label_oneh
 
         
-        train_data = MusicDataset(music_train, label_oneh)
+        train_data = MusicDataset(music_train[:50], label_oneh)
         train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
-        print(train_loader.dataset)
-
-       
+        # print(train_loader.dataset)
 
         return train_loader, 1025 * 130
 
@@ -85,6 +84,7 @@ def main(args):
 
                 if epoch == 0:
                         print("Starting...")
+                        
 
                 for j, data in enumerate(train_loader):
                         feat, labels = data
@@ -103,18 +103,40 @@ def main(args):
                         train_acc += (predict.max(1)[1].float() == labels.max(1)[1].float()).sum().float().item()
                         total_count += args.batch_size
                         train_loss += loss.item()
-                ipdb.set_trace()
+
+                        # confusion = confusion_matrix(labels, predict)
+                        # print("confusion", confusion)
+                
                         # print("train_loss", train_loss)
                 
                 running_accuracy.append(train_acc/total_count)
                 running_loss.append(train_loss/float(j+1))
                 nRec.append(epoch)
 
+
                 if epoch % args.eval_every == args.eval_every-1:
                         # print("Epoch: %d | Training accuracy: %f | Training loss: %f | Val accuracy: %f | Val loss: %f"
                         # % (epoch, running_accuracy[-1], running_loss[-1], running_valid_accuracy[-1], running_valid_loss[-1]))
                         print("Epoch: %d | Training accuracy: %f | Training loss: %f"
                         % (epoch+1, running_accuracy[-1], running_loss[-1]))
+
+        # confusion = None
+        
+        # # Confusion matrix
+        # for k, data in enumerate(train_loader):
+        #         feat, labels = data
+
+        #         # rounded_labels = np.argmax(labels, axis=1)
+        #         rounded_labels = labels.max(1)[1].float()
+        
+        #         predict = model(feat).float()
+        #         loss = loss_func(predict.squeeze(), labels.nonzero()[:,1].long())
+        #         predict = model(feat).float()
+        #         # ipdb.set_trace()
+        #         # train_acc += (predict.max(1)[1].float() == labels.max(1)[1].float()).sum().float().item()
+        #         confusion = confusion_matrix(rounded_labels, predict.detach())
+        #         print("confusion", confusion)
+                
 
 
         end = time()
@@ -144,9 +166,9 @@ def main(args):
 
 if __name__ == '__main__':
         parser = argparse.ArgumentParser()
-        parser.add_argument('--batch-size', type=int, default=64)
+        parser.add_argument('--batch-size', type=int, default=30)
         parser.add_argument('--lr', type=float, default=0.001)
-        parser.add_argument('--epochs', type=int, default=100)
+        parser.add_argument('--epochs', type=int, default=2)
         parser.add_argument('--eval_every', type=int, default=2)
 
         args = parser.parse_args()
