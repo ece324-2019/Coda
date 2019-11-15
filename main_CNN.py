@@ -48,6 +48,14 @@ def load_data():
     data['instruments'] = label_encoder.fit_transform(data['instruments'])
     labels = data["instruments"].values
     music_train = data["normalized"].values
+
+    music_train = np.append(music_train[:3364], music_train[3365:])
+
+    # np.savetxt('bad.csv', music_train[3364], delimiter=',')
+    # for i in range(music_train.shape[0]):
+    #     if not ((music_train[i] > -100).all() and (music_train[i] < 100).all()):
+    #         print('bad!, ', i)
+
     # music_train = music_train[-8:-1]
     # ipdb.set_trace()
     # Encode instruments

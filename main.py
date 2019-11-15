@@ -76,8 +76,7 @@ def main(args):
                 
                         optimizer.zero_grad()
                         predict = model(feat.unsqueeze(1)).float()
-                        # print(labels)
-                        loss = loss_func(predict, labels.long())
+                        loss = loss_func(predict, labels)
                         loss.backward()
                         optimizer.step()
 
