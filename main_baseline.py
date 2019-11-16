@@ -92,7 +92,7 @@ def main(args):
         for j, data in enumerate(train_loader):
             feat, labels = data
             if not gpu:
-                true.extend(labels.numpy())
+                true.extend(np.where(labels == 1))
 
             if torch.cuda.is_available():
                 feat, labels = feat.to(device), labels.to(device)
@@ -177,10 +177,10 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=30)
+    parser.add_argument('--batch-size', type=int, default=50)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=2)
-    parser.add_argument('--eval_every', type=int, default=2)
+    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--eval_every', type=int, default=3)
 
     args = parser.parse_args()
 
