@@ -21,7 +21,10 @@ torch.manual_seed(0)
 
 instruments_list = ["cel", "cla", "flu", "gac", "gel", "org", "pia", "sax", "tru", "vio", "voi"]
 
+gpu = False
+
 if torch.cuda.is_available():
+    gpu = True
     device = torch.device("cuda:0")
     torch.set_default_tensor_type(torch.cuda.FloatTensor)
     print('Using CUDA')
@@ -123,14 +126,20 @@ def main(args):
 
         for j, data in enumerate(train_loader):
             feat, labels = data
-            true.extend(labels.numpy())
+            if not gpu:
+                true.extend(labels.numpy())
             if torch.cuda.is_available():
                 feat, labels = feat.to(device), labels.to(device)
+                true.extend(labels.cpu().numpy())
 
             optimizer.zero_grad()
             predict = model(feat.unsqueeze(1))
             _, predicted = torch.max(predict.data, 1)
-            pred.extend(predicted.numpy())
+            if not gpu:
+                pred.extend(predicted.numpy())
+            else:
+                pred.extend(predicted.cpu().numpy()) 
+
 
             loss = loss_func(predict, labels.long())
             loss.backward()
