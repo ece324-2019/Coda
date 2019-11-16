@@ -47,7 +47,6 @@ def load_data():
     data.columns = ["normalized", "instruments"]
     # print(data.head())
     # print("shape: ", data.shape)
-    print(data["instruments"])
     label_encoder = LabelEncoder()
     data['instruments'] = label_encoder.fit_transform(data['instruments'])
     labels = data["instruments"].values
@@ -138,7 +137,7 @@ def main(args):
             if not gpu:
                 pred.extend(predicted.numpy())
             else:
-                pred.extend(predicted.cpu().numpy()) 
+                pred.extend(predicted.cpu().numpy())
 
 
             loss = loss_func(predict, labels.long())
