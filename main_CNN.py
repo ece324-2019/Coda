@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 from model import ConvNN
 from model import MultiLP
@@ -43,7 +44,7 @@ def load_data():
     data.columns = ["normalized", "instruments"]
     # print(data.head())
     # print("shape: ", data.shape)
-    # print(data["instruments"].value_counts())
+    print(data["instruments"])
     label_encoder = LabelEncoder()
     data['instruments'] = label_encoder.fit_transform(data['instruments'])
     labels = data["instruments"].values
@@ -110,6 +111,8 @@ def main(args):
     validAccRec = []
     validLossRec = []
     nRec = []
+    true = []
+    pred = []
 
     start = time()
     print('Starting training')
@@ -120,11 +123,15 @@ def main(args):
 
         for j, data in enumerate(train_loader):
             feat, labels = data
+            true.extend(labels.numpy())
             if torch.cuda.is_available():
                 feat, labels = feat.to(device), labels.to(device)
 
             optimizer.zero_grad()
             predict = model(feat.unsqueeze(1))
+            _, predicted = torch.max(predict.data, 1)
+            pred.extend(predicted.numpy())
+
             loss = loss_func(predict, labels.long())
             loss.backward()
             optimizer.step()
@@ -151,6 +158,9 @@ def main(args):
     # max(train_acc), max(running_valid_accuracy), end - start))
     # print("Training loss: %f | Valid loss: %f " % (min(running_loss), min(running_valid_loss)))
     # print("overfit acc: %f | overfit loss: %f" % (max(overfit_accuracy), min(overfit_loss)))
+
+    print(confusion_matrix(true, pred))
+    print(instruments_list)
 
     fig = plt.figure()
     ax = plt.subplot(1, 2, 1)
@@ -179,9 +189,9 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=50)
-    parser.add_argument('--lr', type=float, default=0.0001)
-    parser.add_argument('--epochs', type=int, default=21)
+    parser.add_argument('--batch-size', type=int, default=64)
+    parser.add_argument('--lr', type=float, default=0.1)
+    parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--eval_every', type=int, default=3)
 
     args = parser.parse_args()
