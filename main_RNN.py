@@ -137,7 +137,6 @@ def main(args):
                 pred.extend(predicted.numpy())
             else:
                 pred.extend(predicted.cpu().numpy())
-            print(labels.shape)
             loss = loss_func(predict, labels.long())
             loss.backward()
             optimizer.step()
