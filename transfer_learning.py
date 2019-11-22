@@ -64,7 +64,7 @@ def evaluate(model, dataloader, size):
 			inputs, labels = data
 			inputs = np.repeat(inputs.numpy()[..., np.newaxis], 3, -1)
 			inputs = torch.tensor(inputs).permute([0, 3, 1, 2])
-		    if torch.cuda.is_available():
+			if torch.cuda.is_available():
 				inputs = inputs.to(device)
 				labels = labels.to(device)
 
@@ -91,17 +91,17 @@ def main(args):
 			print('Epoch {}/{}'.format(epoch, num_epochs - 1))
 			print('-' * 10)
 
-            # Each epoch has a training and validation phase
-            # for phase in ['train', 'val']:
-            #         if phase == 'train':
-            #                 model.train()  # Set model to training mode
-            #         else:
-            #                 model.eval()   # Set model to evaluate mode
+			# Each epoch has a training and validation phase
+			# for phase in ['train', 'val']:
+			#         if phase == 'train':
+			#                 model.train()  # Set model to training mode
+			#         else:
+			#                 model.eval()   # Set model to evaluate mode
 
 			running_loss = 0.0
 			running_corrects = 0
 
-            # Iterate over data.
+			# Iterate over data.
 			for j, data in enumerate(train_loader):
 				inputs, labels = data
 				if torch.cuda.is_available():
@@ -173,17 +173,17 @@ def main(args):
 	valid_set = MusicDataset(valid_data, valid_labels)
 	train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
 	valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
-    # print(train_loader)
+	# print(train_loader)
 
-    # data_dir = 'data/'
-    # image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
-    #                                           data_transforms[x])
-    #                   for x in ['train', 'val']}
-    # dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4,
-    #                                              shuffle=True, num_workers=4)
-    #               for x in ['train', 'val']}
-    # dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
-    # class_names = image_datasets['train'].classes
+	# data_dir = 'data/'
+	# image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
+	#                                           data_transforms[x])
+	#                   for x in ['train', 'val']}
+	# dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4,
+	#                                              shuffle=True, num_workers=4)
+	#               for x in ['train', 'val']}
+	# dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
+	# class_names = image_datasets['train'].classes
 
 	dataset_sizes = len(train_data)
 	dataset_sizes_valid = len(valid_data)
