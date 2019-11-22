@@ -55,40 +55,40 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 # return train_loader, valid_loader, (music_data[0].shape[0] * music_data[0].shape[1])
+def evaluate(model, dataloader, size):
+	running_loss = 0.0
+	running_corrects = 0
+	with torch.no_grad():
+		for i, data in enumerate(dataloader):
+			inputs, labels = data
+			inputs = np.repeat(inputs.numpy()[..., np.newaxis], 3, -1)
+			inputs = torch.tensor(inputs).permute([0, 3, 1, 2])
+			if torch.cuda.is_available():
+				inputs = inputs.to(device)
+				labels = labels.to(device)
+
+			outputs = model(inputs)
+			_, preds = torch.max(outputs, 1)
+			loss = criterion(outputs, labels)
+
+			# statistics
+			running_loss += loss.item() * inputs.size(0)
+			running_corrects += torch.sum(preds == labels.data)
+		epoch_loss = running_loss / size
+		epoch_acc = running_corrects.double() / size
+	return epoch_loss, epoch_acc
 
 def main(args):
-    def evaluate(model, dataloader):
-        running_loss = 0.0
-        running_corrects = 0
-        with torch.no_grad():
-            for i, data in enumerate(dataloader):
-                inputs, labels = data
-                inputs = np.repeat(inputs.numpy()[..., np.newaxis], 3, -1)
-                inputs = torch.tensor(inputs).permute([0, 3, 1, 2])
-                if torch.cuda.is_available():
-                    inputs = inputs.to(device)
-                    labels = labels.to(device)
 
-                outputs = model(inputs)
-                _, preds = torch.max(outputs, 1)
-                loss = criterion(outputs, labels)
+	def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
+		since = time()
 
-                # statistics
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
-            epoch_loss = running_loss / dataset_sizes
-            epoch_acc = running_corrects.double() / dataset_sizes
-        return epoch_loss, epoch_acc
+		best_model_wts = copy.deepcopy(model.state_dict())
+		best_acc = 0.0
 
-    def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
-        since = time()
-
-        best_model_wts = copy.deepcopy(model.state_dict())
-        best_acc = 0.0
-
-        for epoch in range(num_epochs):
-            print('Epoch {}/{}'.format(epoch, num_epochs - 1))
-            print('-' * 10)
+		for epoch in range(num_epochs):
+			print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+			print('-' * 10)
 
             # Each epoch has a training and validation phase
             # for phase in ['train', 'val']:
@@ -97,84 +97,82 @@ def main(args):
             #         else:
             #                 model.eval()   # Set model to evaluate mode
 
-            running_loss = 0.0
-            running_corrects = 0
+			running_loss = 0.0
+			running_corrects = 0
 
             # Iterate over data.
-            for j, data in enumerate(train_loader):
-                inputs, labels = data
-                if torch.cuda.is_available():
-                    inputs = inputs.to(device)
-                    labels = labels.to(device)
+			for j, data in enumerate(train_loader):
+				inputs, labels = data
+				if torch.cuda.is_available():
+					inputs = inputs.to(device)
+					labels = labels.to(device)
 
-                # zero the parameter gradients
-                optimizer.zero_grad()
+				# zero the parameter gradients
+				optimizer.zero_grad()
 
-                inputs = np.repeat(inputs.cpu().numpy()[..., np.newaxis], 3, -1)
-                inputs = torch.tensor(inputs).to(device).permute([0, 3, 1, 2])
-                # track history if only in train
-                # with torch.set_grad_enabled(phase == 'train'):
+				inputs = np.repeat(inputs.cpu().numpy()[..., np.newaxis], 3, -1)
+				inputs = torch.tensor(inputs).to(device).permute([0, 3, 1, 2])
+				# track history if only in train
+				# with torch.set_grad_enabled(phase == 'train'):
 
-                outputs = model(inputs)
-                _, preds = torch.max(outputs, 1)
-                loss = criterion(outputs, labels)
+				outputs = model(inputs)
+				_, preds = torch.max(outputs, 1)
+				loss = criterion(outputs, labels)
 
-                # backward + optimize only if in training phase
-                # if phase == 'train':
-                loss.backward()
-                optimizer.step()
+				# backward + optimize only if in training phase
+				# if phase == 'train':
+				loss.backward()
+				optimizer.step()
 
-                # statistics
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
+				# statistics
+				running_loss += loss.item() * inputs.size(0)
+				running_corrects += torch.sum(preds == labels.data)
 
-            # if phase == 'train':
-            scheduler.step()
+			# if phase == 'train':
+			scheduler.step()
 
-            epoch_loss = running_loss / dataset_sizes
-            epoch_acc = running_corrects.double() / dataset_sizes
+			epoch_loss = running_loss / dataset_sizes
+			epoch_acc = running_corrects.double() / dataset_sizes
 
-            model.eval()
-            val_loss, val_acc = evaluate(model, valid_loader)
-            model.train()
+			model.eval()
+			val_loss, val_acc = evaluate(model, valid_loader, dataset_sizes_valid)
+			model.train()
 
-            print('Train Loss: {:.4f} Train Acc: {:.4f} Val Loss: {:.4f} Val Acc: {:.4f}'.format(
-                epoch_loss, epoch_acc, val_loss, val_acc))
+			print('Train Loss: {:.4f} Train Acc: {:.4f} Val Loss: {:.4f} Val Acc: {:.4f}'.format(epoch_loss, epoch_acc, val_loss, val_acc))
 
-            # deep copy the model
-            # if phase == 'val' and epoch_acc > best_acc:
-            #         best_acc = epoch_acc
-            #         best_model_wts = copy.deepcopy(model.state_dict())
+			# deep copy the model
+			# if phase == 'val' and epoch_acc > best_acc:
+			#         best_acc = epoch_acc
+			#         best_model_wts = copy.deepcopy(model.state_dict())
 
-            print()
+			print()
 
-        time_elapsed = time() - since
-        print('Training complete in {:.0f}m {:.0f}s'.format(
-            time_elapsed // 60, time_elapsed % 60))
-        print('Best val Acc: {:4f}'.format(best_acc))
+		time_elapsed = time() - since
+		print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+		print('Best val Acc: {:4f}'.format(best_acc))
 
-        # load best model weights
-        model.load_state_dict(best_model_wts)
-        return model
+		# load best model weights
+		model.load_state_dict(best_model_wts)
+		return model
 
-    data = pd.read_pickle('MFCC_harm.pkl')
-    data.columns = ["normalized", "instruments"]
-    label_encoder = LabelEncoder()
-    data['instruments'] = label_encoder.fit_transform(data['instruments'])
-    labels = data["instruments"].values
-    music_data = data["normalized"].values
+	data = pd.read_pickle('data/MFCC_harm.pkl')
+	data.columns = ["normalized", "instruments"]
+	label_encoder = LabelEncoder()
+	data['instruments'] = label_encoder.fit_transform(data['instruments'])
+	labels = data["instruments"].values
+	music_data = data["normalized"].values
 
-    music_data = np.append(music_data[:3364], music_data[3365:])
-    labels = np.append(labels[:3364], labels[3365:])
+	music_data = np.append(music_data[:3364], music_data[3365:])
+	labels = np.append(labels[:3364], labels[3365:])
 
-    train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1,
-                                                                          random_state=1)
-    oneh_encoder = OneHotEncoder(categories="auto", sparse=False)
-    train_set = MusicDataset(train_data, train_labels)
-    valid_set = MusicDataset(valid_data, valid_labels)
-    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
-    valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
-    print(train_loader)
+	train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1,
+																			random_state=1)
+	oneh_encoder = OneHotEncoder(categories="auto", sparse=False)
+	train_set = MusicDataset(train_data, train_labels)
+	valid_set = MusicDataset(valid_data, valid_labels)
+	train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
+	valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
+    # print(train_loader)
 
     # data_dir = 'data/'
     # image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
@@ -186,36 +184,36 @@ def main(args):
     # dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
     # class_names = image_datasets['train'].classes
 
-    dataset_sizes = len(train_data)
+	dataset_sizes = len(train_data)
+	dataset_sizes_valid = len(valid_data)
 
-    model_ft = models.resnet18(pretrained=True)
-    num_ftrs = model_ft.fc.in_features
+	model_ft = models.resnet18(pretrained=True)
+	num_ftrs = model_ft.fc.in_features
 
-    # Here the size of each output sample is set to 2.
-    # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
-    model_ft.fc = nn.Linear(num_ftrs, 11)
+	# Here the size of each output sample is set to 2.
+	# Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
+	model_ft.fc = nn.Linear(num_ftrs, 11)
 
-    model_ft = model_ft.to(device)
+	model_ft = model_ft.to(device)
 
-    criterion = nn.CrossEntropyLoss()
+	criterion = nn.CrossEntropyLoss()
 
-    # Observe that all parameters are being optimized
-    optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
+	# Observe that all parameters are being optimized
+	optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
 
-    # Decay LR by a factor of 0.1 every 7 epochs
-    exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
+	# Decay LR by a factor of 0.1 every 7 epochs
+	exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-    model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler,
-                           num_epochs=25)
+	model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=25)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=0.1)
-    parser.add_argument('--epochs', type=int, default=30)
-    parser.add_argument('--eval_every', type=int, default=3)
+	parser = argparse.ArgumentParser()
+	parser.add_argument('--batch-size', type=int, default=64)
+	parser.add_argument('--lr', type=float, default=0.1)
+	parser.add_argument('--epochs', type=int, default=30)
+	parser.add_argument('--eval_every', type=int, default=3)
 
-    args = parser.parse_args()
+	args = parser.parse_args()
 
-    main(args)
+	main(args)
