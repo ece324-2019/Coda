@@ -25,9 +25,7 @@ from model import MusicDataset
 
 import argparse
 from time import time
-import ipdb
 
-plt.ion()   # interactive mode
 
 # data_transforms = {
 #     'train': transforms.Compose([
@@ -91,8 +89,8 @@ def main(args):
                                 # zero the parameter gradients
                                 optimizer.zero_grad()
 
-                                inputs = np.repeat(inputs[..., np.newaxis], 3, -1).permute([0, 3, 1, 2])
-
+                                inputs = np.repeat(inputs.cpu().numpy()[..., np.newaxis], 3, -1)
+                                inputs = torch.tensor(inputs).to(device).permute([0, 3, 1, 2])
                                 # track history if only in train
                                 # with torch.set_grad_enabled(phase == 'train'):
 
@@ -115,8 +113,8 @@ def main(args):
                         epoch_loss = running_loss / dataset_sizes
                         epoch_acc = running_corrects.double() / dataset_sizes
 
-                        print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-                                phase, epoch_loss, epoch_acc))
+                        print('Loss: {:.4f} Acc: {:.4f}'.format(
+                                epoch_loss, epoch_acc))
 
                         # deep copy the model
                         # if phase == 'val' and epoch_acc > best_acc:
@@ -134,7 +132,7 @@ def main(args):
                 model.load_state_dict(best_model_wts)
                 return model
 
-        data = pd.read_pickle('data/MFCC_harm.pkl')
+        data = pd.read_pickle('MFCC_harm.pkl')
         data.columns = ["normalized", "instruments"]
         label_encoder = LabelEncoder()
         data['instruments'] = label_encoder.fit_transform(data['instruments'])
