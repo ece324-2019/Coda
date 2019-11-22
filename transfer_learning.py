@@ -156,7 +156,7 @@ def main(args):
 		model.load_state_dict(best_model_wts)
 		return model
 
-	data = pd.read_pickle('data/MFCC_harm.pkl')
+	data = pd.read_pickle('MFCC_harm.pkl')
 	data.columns = ["normalized", "instruments"]
 	label_encoder = LabelEncoder()
 	data['instruments'] = label_encoder.fit_transform(data['instruments'])
