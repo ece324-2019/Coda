@@ -55,6 +55,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 # return train_loader, valid_loader, (music_data[0].shape[0] * music_data[0].shape[1])
+criterion = nn.CrossEntropyLoss()
 def evaluate(model, dataloader, size):
 	running_loss = 0.0
 	running_corrects = 0
@@ -63,7 +64,7 @@ def evaluate(model, dataloader, size):
 			inputs, labels = data
 			inputs = np.repeat(inputs.numpy()[..., np.newaxis], 3, -1)
 			inputs = torch.tensor(inputs).permute([0, 3, 1, 2])
-			if torch.cuda.is_available():
+		    if torch.cuda.is_available():
 				inputs = inputs.to(device)
 				labels = labels.to(device)
 
