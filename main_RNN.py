@@ -195,11 +195,11 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch-size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=0.1)
+    parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--eval_every', type=int, default=3)
     parser.add_argument('--emb_dim', type=int, default=1025)
-    parser.add_argument('--hidden_dim', type=int, default=500)
+    parser.add_argument('--hidden_dim', type=int, default=1025)
 
     args = parser.parse_args()
 

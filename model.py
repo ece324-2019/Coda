@@ -47,6 +47,7 @@ class RNN(nn.Module):
     def forward(self, x):
         packed_output, hidden = self.gru(x)
         hidden = torch.sigmoid(self.fc(hidden.squeeze(0)))
+        hidden = F.softmax(hidden)
         return hidden
 
 
