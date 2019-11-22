@@ -82,42 +82,46 @@ def main(args):
                         running_corrects = 0
 
                         # Iterate over data.
-                        for inputs, labels in enumerate(train_loader):
-                                inputs = inputs.to(device)
-                                labels = labels.to(device)
+                        for j, data in enumerate(train_loader):
+                                inputs, labels = data
+                                if torch.cuda.is_available():
+                                        inputs = inputs.to(device)
+                                        labels = labels.to(device)
 
                                 # zero the parameter gradients
                                 optimizer.zero_grad()
 
-                                # forward
+                                inputs = np.repeat(inputs[..., np.newaxis], 3, -1).permute([0, 3, 1, 2])
+
                                 # track history if only in train
-                                with torch.set_grad_enabled(phase == 'train'):
-                                        outputs = model(inputs)
-                                        _, preds = torch.max(outputs, 1)
-                                        loss = criterion(outputs, labels)
+                                # with torch.set_grad_enabled(phase == 'train'):
+
+                                outputs = model(inputs)
+                                _, preds = torch.max(outputs, 1)
+                                loss = criterion(outputs, labels)
 
                                 # backward + optimize only if in training phase
-                                if phase == 'train':
-                                        loss.backward()
-                                        optimizer.step()
+                                # if phase == 'train':
+                                loss.backward()
+                                optimizer.step()
 
                                 # statistics
                                 running_loss += loss.item() * inputs.size(0)
                                 running_corrects += torch.sum(preds == labels.data)
                         
-                        if phase == 'train':
-                                scheduler.step()
+                        # if phase == 'train':
+                        scheduler.step()
 
-                        epoch_loss = running_loss / dataset_sizes[phase]
-                        epoch_acc = running_corrects.double() / dataset_sizes[phase]
+                        epoch_loss = running_loss / dataset_sizes
+                        epoch_acc = running_corrects.double() / dataset_sizes
 
                         print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                                 phase, epoch_loss, epoch_acc))
 
                         # deep copy the model
-                        if phase == 'val' and epoch_acc > best_acc:
-                                best_acc = epoch_acc
-                                best_model_wts = copy.deepcopy(model.state_dict())
+                        # if phase == 'val' and epoch_acc > best_acc:
+                        #         best_acc = epoch_acc
+                        #         best_model_wts = copy.deepcopy(model.state_dict())
 
                         print()
 
@@ -147,10 +151,23 @@ def main(args):
         valid_set = MusicDataset(valid_data, valid_labels)
         train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
         valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
+        print(train_loader)
+
+        # data_dir = 'data/'
+        # image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
+        #                                           data_transforms[x])
+        #                   for x in ['train', 'val']}
+        # dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4,
+        #                                              shuffle=True, num_workers=4)
+        #               for x in ['train', 'val']}
+        # dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
+        # class_names = image_datasets['train'].classes
+
+
+        dataset_sizes = len(train_data) 
 
         model_ft = models.resnet18(pretrained=True)
         num_ftrs = model_ft.fc.in_features
-        # num_ftrs = model_ft.features
 
 
         # Here the size of each output sample is set to 2.
