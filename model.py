@@ -38,15 +38,15 @@ class ConvNN(nn.Module):
 
 
 class RNN(nn.Module):
-    def __init__(self, embedding_dim, vocab, hidden_dim):
+    def __init__(self, embedding_dim, hidden_dim):
         super(RNN, self).__init__()
         self.gru = nn.GRU(embedding_dim, hidden_dim)
 
-        self.fc = nn.Linear(embedding_dim, 1)
+        self.fc = nn.Linear(hidden_dim, 11)
 
-    def forward(self, x, lengths):
-        packed_output, hidden = self.gru(packed)
-        hidden = torch.sigmoid(self.fc(hidden.squeeze(0))).squeeze(1)
+    def forward(self, x):
+        packed_output, hidden = self.gru(x)
+        hidden = torch.sigmoid(self.fc(hidden.squeeze(0)))
         return hidden
 
 
