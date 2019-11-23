@@ -19,7 +19,7 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
-from model import ConvNN
+from model import ConvNN, VGGModule
 from model import MultiLP
 from model import MusicDataset
 
@@ -189,31 +189,34 @@ def main(args):
 	dataset_sizes_valid = len(valid_data)
 
 	# model_ft = models.resnet18(pretrained=True)
-	model_ft = models.resnet50(pretrained=True)
-	num_ftrs = model_ft.fc.in_features
+	# model_ft = models.resnet50(pretrained=True)
+	# num_ftrs = model_ft.fc.in_features
+	# model_ft = models.vgg16(pretrained=True)
+	# num_ftrs = model_ft.classifier.in_features
+	model_ft = VGGModule()
 
 
 	# Here the size of each output sample is set to 2.
 	# Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
-	model_ft.fc = nn.Linear(num_ftrs, 11)
+	# model_ft.fc = nn.Linear(num_ftrs, 11)
 
 	model_ft = model_ft.to(device)
 
 	criterion = nn.CrossEntropyLoss()
 
 	# Observe that all parameters are being optimized
-	optimizer_ft = optim.SGD(model_ft.parameters(), lr=0.001, momentum=0.9)
+	optimizer_ft = optim.SGD(model_ft.parameters(), lr=args.lr, momentum=0.9)
 
 	# Decay LR by a factor of 0.1 every 7 epochs
 	exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
-	model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=25)
+	train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler, num_epochs=25)
 
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--batch-size', type=int, default=64)
-	parser.add_argument('--lr', type=float, default=0.1)
+	parser.add_argument('--lr', type=float, default=0.0001)
 	parser.add_argument('--epochs', type=int, default=30)
 	parser.add_argument('--eval_every', type=int, default=3)
 
