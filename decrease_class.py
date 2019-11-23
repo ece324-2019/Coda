@@ -47,8 +47,8 @@ data_voi = data[data["instruments"] == "voi"][:2333]
 # data_voi = data[data["instruments"] == "voi"][:777]
 
 data = pd.concat([data_string, data_wood, data_key, data_brass, data_voi], ignore_index=True)
-print(data['instruments'].value_counts())
-print(data.head())
+# print(data['instruments'].value_counts())
+# print(data.head())
 
 # Encode labels
 label_encoder = LabelEncoder()
