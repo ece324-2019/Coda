@@ -55,6 +55,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 # return train_loader, valid_loader, (music_data[0].shape[0] * music_data[0].shape[1])
+criterion = nn.CrossEntropyLoss()
 def evaluate(model, dataloader, size):
 	running_loss = 0.0
 	running_corrects = 0
@@ -90,17 +91,17 @@ def main(args):
 			print('Epoch {}/{}'.format(epoch, num_epochs - 1))
 			print('-' * 10)
 
-            # Each epoch has a training and validation phase
-            # for phase in ['train', 'val']:
-            #         if phase == 'train':
-            #                 model.train()  # Set model to training mode
-            #         else:
-            #                 model.eval()   # Set model to evaluate mode
+			# Each epoch has a training and validation phase
+			# for phase in ['train', 'val']:
+			#         if phase == 'train':
+			#                 model.train()  # Set model to training mode
+			#         else:
+			#                 model.eval()   # Set model to evaluate mode
 
 			running_loss = 0.0
 			running_corrects = 0
 
-            # Iterate over data.
+			# Iterate over data.
 			for j, data in enumerate(train_loader):
 				inputs, labels = data
 				if torch.cuda.is_available():
@@ -155,7 +156,7 @@ def main(args):
 		model.load_state_dict(best_model_wts)
 		return model
 
-	data = pd.read_pickle('data/MFCC_harm.pkl')
+	data = pd.read_pickle('MFCC_harm.pkl')
 	data.columns = ["normalized", "instruments"]
 	label_encoder = LabelEncoder()
 	data['instruments'] = label_encoder.fit_transform(data['instruments'])
@@ -172,23 +173,25 @@ def main(args):
 	valid_set = MusicDataset(valid_data, valid_labels)
 	train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
 	valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
-    # print(train_loader)
+	# print(train_loader)
 
-    # data_dir = 'data/'
-    # image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
-    #                                           data_transforms[x])
-    #                   for x in ['train', 'val']}
-    # dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4,
-    #                                              shuffle=True, num_workers=4)
-    #               for x in ['train', 'val']}
-    # dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
-    # class_names = image_datasets['train'].classes
+	# data_dir = 'data/'
+	# image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
+	#                                           data_transforms[x])
+	#                   for x in ['train', 'val']}
+	# dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4,
+	#                                              shuffle=True, num_workers=4)
+	#               for x in ['train', 'val']}
+	# dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
+	# class_names = image_datasets['train'].classes
 
 	dataset_sizes = len(train_data)
 	dataset_sizes_valid = len(valid_data)
 
-	model_ft = models.resnet18(pretrained=True)
+	# model_ft = models.resnet18(pretrained=True)
+	model_ft = models.resnet50(pretrained=True)
 	num_ftrs = model_ft.fc.in_features
+
 
 	# Here the size of each output sample is set to 2.
 	# Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
