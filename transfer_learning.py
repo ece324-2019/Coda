@@ -189,8 +189,10 @@ def main(args):
 	dataset_sizes_valid = len(valid_data)
 
 	# model_ft = models.resnet18(pretrained=True)
-	model_ft = models.resnet50(pretrained=True)
-	num_ftrs = model_ft.fc.in_features
+	# model_ft = models.resnet50(pretrained=True)
+	# num_ftrs = model_ft.fc.in_features
+	model_ft = models.vgg16(pretrained=True)
+	num_ftrs = model_ft.classifier.in_features
 
 
 	# Here the size of each output sample is set to 2.
