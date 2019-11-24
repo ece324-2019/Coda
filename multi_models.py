@@ -4,21 +4,24 @@ import torch.nn.functional as F
 import torch.utils.data as data
 from torchvision import models
 
-a = 200
-b = 84
+a = 1000
+b = 1000
 output_layers = 1
 
 class MultiInstrumClass(nn.Module):
-        def __init__(self, input_size, num_instruments):
-                super(MultiInstrumClass, self).__init__()
-                self.models = nn.ModuleList([MultiLP(input_size) for _ in range(num_instruments)])
+	def __init__(self, input_size, num_instruments, model_name):
+		super(MultiInstrumClass, self).__init__()
+		print("Using %s..." % model_name)
+		if model_name == "baseline":
+			self.models = nn.ModuleList([MultiLP(input_size) for _ in range(num_instruments)])
+		elif model_name == "cnn":
+			self.models = nn.ModuleList([ConvNN() for _ in range(num_instruments)])
 
-        def forward(self, x):
-                out = []
-                for i in range(len(self.models)):
-                        out.append(self.models[i](x))
-
-                return torch.stack(out, 1).squeeze()
+	def forward(self, x):
+		out = []
+		for i in range(len(self.models)):
+			out.append(self.models[i](x))
+		return torch.stack(out, 1).squeeze()
 
 class MultiLP(nn.Module):
 	def __init__(self, input_size):
@@ -32,3 +35,18 @@ class MultiLP(nn.Module):
 		x = torch.relu(self.fc2(x))
 		x = torch.sigmoid(self.fc3(x))
 		return x
+
+class ConvNN(nn.Module):
+    def __init__(self):
+        super(ConvNN, self).__init__()
+        self.conv1 = nn.Conv2d(1, 500, kernel_size=(128, 6))
+        self.pool = nn.MaxPool2d(kernel_size=(1, 129))
+        self.conv2 = nn.Conv2d(3, 8, 5)
+        self.fc1 = nn.Linear(500 * 60 * 1, 1)
+
+    def forward(self, x):
+        x = x.view(-1, 1, 128, 65)
+        x = F.relu(self.conv1(x))
+        x = x.view(-1, 500 * 60 * 1)
+        x = torch.sigmoid(self.fc1(x))
+        return x
