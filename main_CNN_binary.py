@@ -106,8 +106,8 @@ def main(args):
                 running_loss += loss
 
                 # Calculate correct labels and accuracy
-                total_num += batch.label.size(0)
-                corr = (pred > 0.5).squeeze().float() == batch.label.float()
+                total_num += len(labels)
+                corr = (pred > 0.5).squeeze().float() == labels.float()
                 total_corr += int(corr.sum())
         return total_corr / total_num, running_loss / cnt
 
