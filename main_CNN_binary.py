@@ -141,7 +141,6 @@ def main(args):
             predict = model(feat.unsqueeze(1)).squeeze()
 
             loss = loss_func(predict, labels.float())
-            print(loss)
             loss.backward()
             optimizer.step()
 
