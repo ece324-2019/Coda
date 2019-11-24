@@ -6,6 +6,8 @@ from torchvision import models
 
 a = 1000
 b = 1000
+# a = 200
+# b = 83
 output_layers = 1
 
 class MultiInstrumClass(nn.Module):
