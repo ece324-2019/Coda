@@ -136,14 +136,14 @@ def main(args):
 	train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
 	valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
         
-	model_ft = MultiInstrumClass(128*65, 11)
+	model_ft = MultiInstrumClass(128*65, 11, args.model)
 
 	if torch.cuda.is_available():
 		model.cuda()
 
 	plot_train_acc, plot_valid_acc, plot_train_loss, plot_valid_loss, nRec = [], [], [], [], []
 
-	optimizer_ft = torch.optim.Adam(model_ft.parameters(), lr=args.lr, weight_decay=.05)
+	optimizer_ft = torch.optim.Adam(model_ft.parameters(), lr=args.lr, weight_decay=.01)
 	exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 	model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler, args.epochs)
 
@@ -164,7 +164,7 @@ def main(args):
 	plt.ylabel("Loss")
 	bx.legend()
 	plt.show()
-	plt.savefig("baseline.png")
+	plt.savefig("%s.png" % args.model)
 	plt.clf()
 
 
@@ -172,7 +172,9 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--batch-size', type=int, default=64)
 	parser.add_argument('--lr', type=float, default=0.0001)
-	parser.add_argument('--epochs', type=int, default=50)
+	parser.add_argument('--epochs', type=int, default=1)
+	parser.add_argument('--model', type=str, default='baseline',
+                        help="Model type: baseline,rnn,cnn (Default: baseline)")
 
 	args = parser.parse_args()
 
