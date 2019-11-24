@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
 from model import ConvNN
-from model import MultiLP
+from multi_models import MLP_string, MLP_brass, MLP_wood, MLP_key, MLP_voice
 from model import MusicDataset
 
 import argparse
@@ -119,16 +119,9 @@ def main(args):
 
 	data = pd.read_pickle('11_class.pkl')
 	print(data['instruments'].value_counts())
-	# data.columns = ["normalized", "instruments"]
-	# label_encoder = LabelEncoder()
-	# data['instruments'] = label_encoder.fit_transform(data['instruments'])
 	labels = data["instruments"].values
 	music_data = data["normalized"].values
 
-	# ipdb.set_trace()
-
-	# music_data = np.append(music_data[:3364], music_data[3365:])
-	# labels = np.append(labels[:3364], labels[3365:])
 	music_data = np.stack(music_data).reshape(-1, 128*65) #65*128, 1025 * 65
 
 	train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
@@ -141,7 +134,12 @@ def main(args):
 	dataset_sizes = len(train_data)
 	dataset_sizes_valid = len(valid_data)
 
-	model_ft = MultiLP(128*65) #65*128, 1025 * 130
+	model_brass = MLP_brass(128*65) #65*128, 1025 * 130
+        model_string = MLP_string(128*65)
+        model_wood = MLP_wood(128*65)
+        model_key = MLP_key(128*65)
+        model_voice = MLP_voice(128*65)
+
 	if torch.cuda.is_available():
 		model.cuda()
 

@@ -4,24 +4,23 @@ import torch.nn.functional as F
 import torch.utils.data as data
 from torchvision import models
 
-
-neurons = 1000
-
+a = 200
+b = 84
 
 class MultiLP(nn.Module):
 
-    def __init__(self, input_size):
-        super(MultiLP, self).__init__()
-        self.fc1 = nn.Linear(input_size, neurons)
-        self.fc2 = nn.Linear(neurons, neurons)
-        self.fc3 = nn.Linear(neurons, 11)
+	def __init__(self, input_size):
+		super(MultiLP, self).__init__()
+		self.fc1 = nn.Linear(input_size, a)
+		self.fc2 = nn.Linear(a, b)
+		self.fc3 = nn.Linear(b, 11)
 
-    def forward(self, features):
-        x = torch.sigmoid(self.fc1(features.float()))
-        x = torch.sigmoid(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
+	def forward(self, features):
+		x = torch.relu(self.fc1(features))
+		x = torch.relu(self.fc2(x))
+		x = self.fc3(x)
+		return x
+        
 
 class ConvNN(nn.Module):
     def __init__(self):
