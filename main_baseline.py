@@ -117,7 +117,7 @@ def main(args):
 		model.load_state_dict(best_model_wts)
 		return model
 
-	data = pd.read_pickle('11_class.pkl')
+	data = pd.read_pickle('5_class.pkl')
 	print(data['instruments'].value_counts())
 	# data.columns = ["normalized", "instruments"]
 	# label_encoder = LabelEncoder()

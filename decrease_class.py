@@ -34,11 +34,11 @@ data.replace("org", "key", inplace=True)
 # print(data['instruments'].value_counts())
 
 # Slice so that they only have the lowest value count of a class
-data_string = data[data["instruments"] == "string"][:2333]
-data_wood = data[data["instruments"] == "wood"][:2333]
-data_key = data[data["instruments"] == "key"][:2333]
-data_brass = data[data["instruments"] == "brass"][:2333]
-data_voi = data[data["instruments"] == "voi"][:2333]
+data_string = data[data["instruments"] == "string"].sample(frac=1).reset_index(drop=True)[:2333]
+data_wood = data[data["instruments"] == "wood"].sample(frac=1).reset_index(drop=True)[:2333]
+data_key = data[data["instruments"] == "key"].sample(frac=1).reset_index(drop=True)[:2333]
+data_brass = data[data["instruments"] == "brass"].sample(frac=1).reset_index(drop=True)[:2333]
+data_voi = data[data["instruments"] == "voi"].sample(frac=1).reset_index(drop=True)[:2333]
 
 # data_string = data[data["instruments"] == "voi"][:720]
 # data_wood = data[data["instruments"] == "wood"][:720]
