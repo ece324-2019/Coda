@@ -36,7 +36,7 @@ def load_model(args, train_len):
     model = ConvNN()
     if torch.cuda.is_available():
         model.cuda()
-    loss_func = torch.nn.BCEWithLogitsLoss()
+    loss_func = torch.nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     return model, loss_func, optimizer
@@ -141,7 +141,6 @@ def main(args):
             predict = model(feat.unsqueeze(1)).squeeze()
 
             loss = loss_func(predict, labels.float())
-            print(loss)
             loss.backward()
             optimizer.step()
 

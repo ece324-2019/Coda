@@ -34,7 +34,7 @@ class ConvNN(nn.Module):
     def forward(self, x):
         x = F.relu(self.conv1(x))
         x = x.view(-1, 500 * 60 * 1)
-        x = self.fc1(x)
+        x = torch.sigmoid(self.fc1(x))
         return x
 
 
