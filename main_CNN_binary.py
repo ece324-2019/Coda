@@ -139,9 +139,9 @@ def main(args):
 
             optimizer.zero_grad()
             predict = model(feat.unsqueeze(1)).squeeze()
-            print(predict > 0.5)
 
             loss = loss_func(predict, labels.float())
+            print(loss)
             loss.backward()
             optimizer.step()
 
