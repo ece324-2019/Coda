@@ -25,16 +25,16 @@ class MultiLP(nn.Module):
 class ConvNN(nn.Module):
     def __init__(self):
         super(ConvNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 50, kernel_size=(1025, 2))
-        self.pool = nn.MaxPool2d(kernel_size=(1, 129))
+        self.conv1 = nn.Conv2d(1, 500, kernel_size=(128, 6))
+        # self.pool = nn.MaxPool2d(kernel_size=(1, 129))
         # self.conv2 = nn.Conv2d(3, 8, 5)
 
-        self.fc1 = nn.Linear(50 * 1 * 1, 11)
+        self.fc1 = nn.Linear(500 * 60 * 1, 1)
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = x.view(-1, 50 * 1 * 1)
-        x = F.relu(self.fc1(x))
+        x = F.relu(self.conv1(x))
+        x = x.view(-1, 500 * 60 * 1)
+        x = torch.sigmoid(self.fc1(x))
         return x
 
 
