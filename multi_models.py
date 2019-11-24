@@ -9,13 +9,15 @@ b = 1000
 output_layers = 1
 
 class MultiInstrumClass(nn.Module):
-	def __init__(self, input_size, num_instruments, model_name):
+	def __init__(self, input_size, num_instruments, emb_dim, hidden_dim, model_name):
 		super(MultiInstrumClass, self).__init__()
 		print("Using %s..." % model_name)
 		if model_name == "baseline":
 			self.models = nn.ModuleList([MultiLP(input_size) for _ in range(num_instruments)])
 		elif model_name == "cnn":
 			self.models = nn.ModuleList([ConvNN() for _ in range(num_instruments)])
+		elif model_name == "rnn":
+			self.models = nn.ModuleList([RNN(emb_dim, hidden_dim) for _ in range(num_instruments)])
 
 	def forward(self, x):
 		out = []
@@ -50,3 +52,16 @@ class ConvNN(nn.Module):
         x = x.view(-1, 500 * 60 * 1)
         x = torch.sigmoid(self.fc1(x))
         return x
+
+class RNN(nn.Module):
+	def __init__(self, embedding_dim, hidden_dim):
+		super(RNN, self).__init__()
+		self.gru = nn.GRU(embedding_dim, hidden_dim)
+		self.fc = nn.Linear(hidden_dim, 11)
+
+	def forward(self, x):
+		x = x.view(-1, 128, 65)
+		packed_output, hidden = self.gru(x)
+		hidden = torch.sigmoid(self.fc(hidden.squeeze(0)))
+		hidden = F.softmax(hidden)
+		return hidden

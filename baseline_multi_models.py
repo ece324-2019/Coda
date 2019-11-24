@@ -136,7 +136,7 @@ def main(args):
 	train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
 	valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
         
-	model_ft = MultiInstrumClass(128*65, 11, args.model)
+	model_ft = MultiInstrumClass(128*65, 11, args.emb_dim, args.hidden_dim, args.model)
 
 	if torch.cuda.is_available():
 		model.cuda()
@@ -173,8 +173,10 @@ if __name__ == '__main__':
 	parser.add_argument('--batch-size', type=int, default=64)
 	parser.add_argument('--lr', type=float, default=0.0001)
 	parser.add_argument('--epochs', type=int, default=1)
-	parser.add_argument('--model', type=str, default='baseline',
-                        help="Model type: baseline,rnn,cnn (Default: baseline)")
+	parser.add_argument('--model', type=str, default='rnn',
+						help="Model type: baseline,rnn,cnn (Default: baseline)")
+	parser.add_argument('--emb_dim', type=int, default=1025)
+	parser.add_argument('--hidden_dim', type=int, default=1025)
 
 	args = parser.parse_args()
 
