@@ -63,8 +63,8 @@ def load_data():
     balanced_data = pd.concat([yes.sample(n=num_samp, random_state=1)
                                   , no.sample(n=num_samp, random_state=1)])
 
-    music_data = data["normalized"].values
-    labels = data["instruments"].values
+    music_data = balanced_data["normalized"].values
+    labels = balanced_data["instruments"].values
 
     music_data = np.append(music_data[:10092], music_data[10093:])
     labels = np.append(labels[:10092], labels[10093:])
@@ -109,7 +109,7 @@ def main(args):
                 total_num += len(labels)
                 corr = (predict > 0.5).squeeze().float() == labels.float()
                 total_corr += int(corr.sum())
-        return total_corr / total_num, running_loss / cnt
+        return total_corr / total_num, running_loss / total_num
 
     train_loader, valid_loader, train_len = load_data()
     model, loss_func, optimizer = load_model(args, train_len)
@@ -198,7 +198,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch-size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=0.1)
+    parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--eval_every', type=int, default=3)
 
