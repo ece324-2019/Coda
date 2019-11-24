@@ -6,11 +6,23 @@ from torchvision import models
 
 a = 200
 b = 84
-output_layers = 2
+output_layers = 1
 
-class MLP_string(nn.Module):
+class MultiInstrumClass(nn.Module):
+        def __init__(self, input_size, num_instruments):
+                super(MultiInstrumClass, self).__init__()
+                self.models = nn.ModuleList([MultiLP(input_size) for _ in range(num_instruments)])
+
+        def forward(self, x):
+                out = []
+                for i in range(len(self.models)):
+                        out.append(self.models[i](x))
+
+                return torch.stack(out, 1).squeeze()
+
+class MultiLP(nn.Module):
 	def __init__(self, input_size):
-		super(MLP_string, self).__init__()
+		super(MultiLP, self).__init__()
 		self.fc1 = nn.Linear(input_size, a)
 		self.fc2 = nn.Linear(a, b)
 		self.fc3 = nn.Linear(b, output_layers)
@@ -18,58 +30,5 @@ class MLP_string(nn.Module):
 	def forward(self, features):
 		x = torch.relu(self.fc1(features))
 		x = torch.relu(self.fc2(x))
-		x = self.fc3(x)
-		return x
-
-class MLP_brass(nn.Module):
-	def __init__(self, input_size):
-		super(MLP_brass, self).__init__()
-		self.fc1 = nn.Linear(input_size, a)
-		self.fc2 = nn.Linear(a, b)
-		self.fc3 = nn.Linear(b, output_layers)
-
-	def forward(self, features):
-		x = torch.relu(self.fc1(features))
-		x = torch.relu(self.fc2(x))
-		x = self.fc3(x)
-		return x
-
-
-class MLP_wood(nn.Module):
-	def __init__(self, input_size):
-		super(MLP_wood, self).__init__()
-		self.fc1 = nn.Linear(input_size, a)
-		self.fc2 = nn.Linear(a, b)
-		self.fc3 = nn.Linear(b, output_layers)
-
-	def forward(self, features):
-		x = torch.relu(self.fc1(features))
-		x = torch.relu(self.fc2(x))
-		x = self.fc3(x)
-		return x
-
-class MLP_key(nn.Module):
-	def __init__(self, input_size):
-		super(MLP_key, self).__init__()
-		self.fc1 = nn.Linear(input_size, a)
-		self.fc2 = nn.Linear(a, b)
-		self.fc3 = nn.Linear(b, output_layers)
-
-	def forward(self, features):
-		x = torch.relu(self.fc1(features))
-		x = torch.relu(self.fc2(x))
-		x = self.fc3(x)
-		return x
-
-class MLP_voice(nn.Module):
-	def __init__(self, input_size):
-		super(MLP_voice, self).__init__()
-		self.fc1 = nn.Linear(input_size, a)
-		self.fc2 = nn.Linear(a, b)
-		self.fc3 = nn.Linear(b, output_layers)
-
-	def forward(self, features):
-		x = torch.relu(self.fc1(features))
-		x = torch.relu(self.fc2(x))
-		x = self.fc3(x)
+		x = torch.sigmoid(self.fc3(x))
 		return x

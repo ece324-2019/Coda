@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
 from model import ConvNN
-from multi_models import MLP_string, MLP_brass, MLP_wood, MLP_key, MLP_voice
+from multi_models import MultiInstrumClass
 from model import MusicDataset
 
 import argparse
@@ -38,11 +38,11 @@ if torch.cuda.is_available():
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 instruments_list = ["cel", "cla", "flu", "gac", "gel", "org", "pia", "sax", "tru", "vio", "voi"]
-criterion = nn.CrossEntropyLoss()
+criterion = nn.BCELoss()
 
-def evaluate(model, dataloader, size):
+def evaluate(model, dataloader):
 	running_loss = 0.0
-	running_corrects = 0
+	running_corrects = []
 	with torch.no_grad():
 		for i, data in enumerate(dataloader):
 			inputs, labels = data
@@ -51,13 +51,16 @@ def evaluate(model, dataloader, size):
 				labels = labels.to(device)
 
 			outputs = model(inputs)
-			_, preds = torch.max(outputs, 1)
-			loss = criterion(outputs, labels)
+			preds = outputs > 0.5
+			loss = criterion(outputs.view(-1).float(), labels.view(-1).float())
 
-			running_loss += loss.item() * inputs.size(0)
-			running_corrects += torch.sum(preds == labels).item()
-		epoch_loss = running_loss / size
-		epoch_acc = running_corrects / size
+			running_loss += loss.item() 
+			running_corrects.append(torch.sum((preds.float() == labels.float())*(labels.float() > 0)).item() / (1e-5 + (preds > 0).sum().item()))
+
+		epoch_loss = running_loss / len(running_corrects)
+		epoch_acc = sum(running_corrects)/ len(running_corrects)
+
+
 	return epoch_loss, epoch_acc
 
 
@@ -71,7 +74,7 @@ def main(args):
 			print('-' * 10)
 
 			running_loss = 0.0
-			running_corrects = 0
+			running_corrects = []
 
 			for j, data in enumerate(train_loader):
 				inputs, labels = data
@@ -80,25 +83,27 @@ def main(args):
 					labels = labels.to(device)
 
 				optimizer.zero_grad()
-
-
 				outputs = model(inputs)
-				_, preds = torch.max(outputs, 1)
-				loss = criterion(outputs, labels)
+
+				# _, preds = torch.max(outputs, 1)
+				preds = outputs > 0.5
+
+				loss = criterion(outputs.view(-1).float(), labels.view(-1).float())
 
 				loss.backward()
 				optimizer.step()
 
-				running_loss += loss.item() * inputs.size(0)
-				running_corrects += torch.sum(preds == labels).item()
+				# ipdb.set_trace()
+				running_loss += loss.item()
+				running_corrects.append(torch.sum((preds.float() == labels.float())*(labels.float() > 0)).item() / (1e-5 + (preds > 0).sum().item()))
 
 			scheduler.step()
 
-			epoch_loss = running_loss / dataset_sizes
-			epoch_acc = running_corrects/ dataset_sizes
+			epoch_loss = running_loss / len(running_corrects)
+			epoch_acc = sum(running_corrects)/ len(running_corrects)
 
 			model.eval()
-			val_loss, val_acc = evaluate(model, valid_loader, dataset_sizes_valid)
+			val_loss, val_acc = evaluate(model, valid_loader)
 			model.train()
 
 			plot_train_acc.append(epoch_acc)
@@ -117,35 +122,28 @@ def main(args):
 		model.load_state_dict(best_model_wts)
 		return model
 
-	data = pd.read_pickle('11_class.pkl')
-	print(data['instruments'].value_counts())
+	data = pd.read_pickle('11_multiclass.pkl')
+	# print(data['instruments'].value_counts())
 	labels = data["instruments"].values
 	music_data = data["normalized"].values
 
 	music_data = np.stack(music_data).reshape(-1, 128*65) #65*128, 1025 * 65
 
 	train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
-	# train_data, valid_data, train_labels, valid_labels = train_data[0:100], valid_data[0:100], train_labels[0:100], valid_labels[0:100]
 
 	train_set = MusicDataset(train_data, train_labels)
 	valid_set = MusicDataset(valid_data, valid_labels)
 	train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
 	valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
-	dataset_sizes = len(train_data)
-	dataset_sizes_valid = len(valid_data)
-
-	model_brass = MLP_brass(128*65) #65*128, 1025 * 130
-        model_string = MLP_string(128*65)
-        model_wood = MLP_wood(128*65)
-        model_key = MLP_key(128*65)
-        model_voice = MLP_voice(128*65)
+        
+	model_ft = MultiInstrumClass(128*65, 11)
 
 	if torch.cuda.is_available():
 		model.cuda()
 
 	plot_train_acc, plot_valid_acc, plot_train_loss, plot_valid_loss, nRec = [], [], [], [], []
 
-	optimizer_ft = torch.optim.Adam(model_ft.parameters(), lr=args.lr)
+	optimizer_ft = torch.optim.Adam(model_ft.parameters(), lr=args.lr, weight_decay=.05)
 	exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 	model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler, args.epochs)
 
@@ -173,8 +171,8 @@ def main(args):
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--batch-size', type=int, default=64)
-	parser.add_argument('--lr', type=float, default=0.001)
-	parser.add_argument('--epochs', type=int, default=20)
+	parser.add_argument('--lr', type=float, default=0.0001)
+	parser.add_argument('--epochs', type=int, default=50)
 
 	args = parser.parse_args()
 
