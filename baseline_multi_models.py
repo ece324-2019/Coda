@@ -122,14 +122,18 @@ def main(args):
 		model.load_state_dict(best_model_wts)
 		return model
 
-	data = pd.read_pickle('11_multiclass.pkl')
+	data = pd.read_pickle('11_class.pkl')
 	# print(data['instruments'].value_counts())
 	labels = data["instruments"].values
 	music_data = data["normalized"].values
 
+	oneh_encoder = OneHotEncoder(categories="auto")
+	label_oneh = oneh_encoder.fit_transform(labels.reshape(-1, 1)).toarray()
+
+
 	music_data = np.stack(music_data).reshape(-1, 128*65) #65*128, 1025 * 65
 
-	train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
+	train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, label_oneh, test_size=0.1, random_state=1)
 
 	train_set = MusicDataset(train_data, train_labels)
 	valid_set = MusicDataset(valid_data, valid_labels)
@@ -172,8 +176,8 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--batch-size', type=int, default=64)
 	parser.add_argument('--lr', type=float, default=0.0001)
-	parser.add_argument('--epochs', type=int, default=1)
-	parser.add_argument('--model', type=str, default='rnn',
+	parser.add_argument('--epochs', type=int, default=15)
+	parser.add_argument('--model', type=str, default='baseline',
 						help="Model type: baseline,rnn,cnn (Default: baseline)")
 	parser.add_argument('--emb_dim', type=int, default=1025)
 	parser.add_argument('--hidden_dim', type=int, default=1025)
