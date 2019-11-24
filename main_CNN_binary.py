@@ -107,7 +107,7 @@ def main(args):
 
                 # Calculate correct labels and accuracy
                 total_num += len(labels)
-                corr = (pred > 0.5).squeeze().float() == labels.float()
+                corr = (predict > 0.5).squeeze().float() == labels.float()
                 total_corr += int(corr.sum())
         return total_corr / total_num, running_loss / cnt
 
@@ -139,6 +139,7 @@ def main(args):
 
             optimizer.zero_grad()
             predict = model(feat.unsqueeze(1)).squeeze()
+            print(predict > 0.5)
 
             loss = loss_func(predict, labels.float())
             loss.backward()
