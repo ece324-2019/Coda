@@ -93,10 +93,10 @@ def main(args):
         running_loss = 0
         cnt = 0
         with torch.no_grad():
-            for i, data in enumerate(iter):
+            for i, batch in enumerate(iter):
                 # if i < int((0.25 * len(iter.dataset)) / args.batch_size):
                 cnt += 1
-                feat, labels = data
+                feat, labels = batch
                 if torch.cuda.is_available():
                     feat, labels = feat.to(device), labels.to(device)
 
@@ -106,8 +106,8 @@ def main(args):
                 running_loss += loss
 
                 # Calculate correct labels and accuracy
-                total_num += data.label.size(0)
-                corr = (pred > 0.5).squeeze().float() == data.label.float()
+                total_num += batch.label.size(0)
+                corr = (pred > 0.5).squeeze().float() == batch.label.float()
                 total_corr += int(corr.sum())
         return total_corr / total_num, running_loss / cnt
 
