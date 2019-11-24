@@ -143,7 +143,7 @@ def main(args):
 	model_ft = MultiInstrumClass(128*65, 11, args.emb_dim, args.hidden_dim, args.model)
 
 	if torch.cuda.is_available():
-		model.cuda()
+		model_ft.cuda()
 
 	plot_train_acc, plot_valid_acc, plot_train_loss, plot_valid_loss, nRec = [], [], [], [], []
 
@@ -179,8 +179,8 @@ if __name__ == '__main__':
 	parser.add_argument('--epochs', type=int, default=15)
 	parser.add_argument('--model', type=str, default='baseline',
 						help="Model type: baseline,rnn,cnn (Default: baseline)")
-	parser.add_argument('--emb_dim', type=int, default=1025)
-	parser.add_argument('--hidden_dim', type=int, default=1025)
+	parser.add_argument('--emb_dim', type=int, default=128)
+	parser.add_argument('--hidden_dim', type=int, default=100)
 
 	args = parser.parse_args()
 

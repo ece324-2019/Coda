@@ -63,11 +63,14 @@ def load_data():
     balanced_data = pd.concat([yes.sample(n=num_samp, random_state=1)
                                   , no.sample(n=num_samp, random_state=1)])
 
+    # np.savetxt('bad.csv', music_train[3364], delimiter=',')
+
+
     music_data = balanced_data["normalized"].values
     labels = balanced_data["instruments"].values
 
-    music_data = np.append(music_data[:10092], music_data[10093:])
-    labels = np.append(labels[:10092], labels[10093:])
+    # music_data = np.append(music_data[:10092], music_data[10093:])
+    # labels = np.append(labels[:10092], labels[10093:])
 
     train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
 
