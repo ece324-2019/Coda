@@ -60,7 +60,8 @@ class RNN(nn.Module):
 		self.fc = nn.Linear(hidden_dim, 1)
 
 	def forward(self, x):
-		x = x.view(65, 64, 128)
+		x = x.view(-1, 128, 65)
+		x = x.permute(2,0,1)
 		packed_output, hidden = self.gru(x)
 		hidden = torch.sigmoid(self.fc(hidden.squeeze(0)))
 		hidden = F.softmax(hidden)
