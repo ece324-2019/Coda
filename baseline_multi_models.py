@@ -122,13 +122,13 @@ def main(args):
 		model.load_state_dict(best_model_wts)
 		return model
 
-	data = pd.read_pickle('11_class.pkl')
+	data = pd.read_pickle('11_multiclass.pkl')
 	# print(data['instruments'].value_counts())
 	labels = data["instruments"].values
 	music_data = data["normalized"].values
 
-	oneh_encoder = OneHotEncoder(categories="auto")
-	labels = oneh_encoder.fit_transform(labels.reshape(-1, 1)).toarray()
+	# oneh_encoder = OneHotEncoder(categories="auto")
+	# labels = oneh_encoder.fit_transform(labels.reshape(-1, 1)).toarray()
 
 	music_data = np.stack(music_data).reshape(-1, 128*65) #65*128, 1025 * 65
 
