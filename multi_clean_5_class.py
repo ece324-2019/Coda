@@ -10,7 +10,8 @@ instruments_list = ["cel", "cla", "flu", "gac", "gel", "org", "pia", "sax", "tru
 data1 = pd.read_pickle('test1.pkl')
 data2 = pd.read_pickle('test2.pkl')
 data3 = pd.read_pickle('test3.pkl')
-data = pd.concat([data1, data2, data3], ignore_index=True)
+data4 = pd.read_pickle('mel_aug.pkl')
+data = pd.concat([data1, data2, data3, data4], ignore_index=True)
 
 data.columns = ["normalized", "instruments"]
 labels = data["instruments"].values
@@ -35,6 +36,8 @@ for index, row in data.iterrows():
 	for instrument in row['instruments']:
 		b[instruments_list.index(instrument)] = 1
 	row['instruments'] = b
+
+print(data.head())
 
 # Save
 data.to_pickle("11_multiclass.pkl")
