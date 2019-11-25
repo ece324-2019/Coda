@@ -156,15 +156,15 @@ def main(args):
 		model.load_state_dict(best_model_wts)
 		return model
 
-	data = pd.read_pickle('MFCC_harm.pkl')
+	data = pd.read_pickle('mel_aug.pkl')
 	data.columns = ["normalized", "instruments"]
 	label_encoder = LabelEncoder()
 	data['instruments'] = label_encoder.fit_transform(data['instruments'])
 	labels = data["instruments"].values
 	music_data = data["normalized"].values
 
-	music_data = np.append(music_data[:3364], music_data[3365:])
-	labels = np.append(labels[:3364], labels[3365:])
+	music_data = np.append(music_data[:10052], music_data[10053:])
+	labels = np.append(labels[:10052], labels[10053:])
 
 	train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1,
 																			random_state=1)
@@ -188,25 +188,25 @@ def main(args):
 	dataset_sizes = len(train_data)
 	dataset_sizes_valid = len(valid_data)
 
-	# model_ft = models.resnet18(pretrained=True)
+	model_ft = models.resnet18()
 	# model_ft = models.resnet50(pretrained=True)
-	# num_ftrs = model_ft.fc.in_features
+	num_ftrs = model_ft.fc.in_features
 	# model_ft = models.vgg16(pretrained=True)
 	# num_ftrs = model_ft.classifier.in_features
-	model_ft = VGGModule()
+	# model_ft = VGGModule()
 
 
 	# Here the size of each output sample is set to 2.
 	# Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
-	# model_ft.fc = nn.Linear(num_ftrs, 11)
+	model_ft.fc = nn.Linear(num_ftrs, 11)
 
 	model_ft = model_ft.to(device)
 
 	criterion = nn.CrossEntropyLoss()
 
 	# Observe that all parameters are being optimized
-	# optimizer_ft = optim.SGD(model_ft.parameters(), lr=args.lr, momentum=0.9)
-	optimizer_ft = optim.Adam(model_ft.parameters(), lr=args.lr, momentum=0.9)
+	optimizer_ft = optim.SGD(model_ft.parameters(), lr=args.lr, momentum=0.9)
+	# optimizer_ft = optim.Adam(model_ft.parameters(), lr=args.lr, momentum=0.9)
 
 	# Decay LR by a factor of 0.1 every 7 epochs
 	exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)

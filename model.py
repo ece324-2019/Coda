@@ -7,33 +7,34 @@ from torchvision import models
 a = 200
 b = 84
 
+
 class MultiLP(nn.Module):
+    def __init__(self, input_size):
+        super(MultiLP, self).__init__()
+        self.fc1 = nn.Linear(input_size, a)
+        self.fc2 = nn.Linear(a, b)
+        self.fc3 = nn.Linear(b, 11)
 
-	def __init__(self, input_size):
-		super(MultiLP, self).__init__()
-		self.fc1 = nn.Linear(input_size, a)
-		self.fc2 = nn.Linear(a, b)
-		self.fc3 = nn.Linear(b, 11)
+    def forward(self, features):
+        x = torch.relu(self.fc1(features))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+        x = torch.softmax(x, dim=1)
+        return x
 
-	def forward(self, features):
-		x = torch.relu(self.fc1(features))
-		x = torch.relu(self.fc2(x))
-		x = self.fc3(x)
-		return x
-        
 
 class ConvNN(nn.Module):
     def __init__(self):
         super(ConvNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 500, kernel_size=(128, 6))
+        self.conv1 = nn.Conv2d(1, 500, kernel_size=(128, 1))
         # self.pool = nn.MaxPool2d(kernel_size=(1, 129))
         # self.conv2 = nn.Conv2d(3, 8, 5)
 
-        self.fc1 = nn.Linear(500 * 60 * 1, 1)
+        self.fc1 = nn.Linear(500 * 2 * 1, 1)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
-        x = x.view(-1, 500 * 60 * 1)
+        x = x.view(-1, 500 * 2 * 1)
         x = torch.sigmoid(self.fc1(x))
         return x
 
@@ -44,11 +45,12 @@ class RNN(nn.Module):
         self.gru = nn.GRU(embedding_dim, hidden_dim)
 
         self.fc = nn.Linear(hidden_dim, 11)
+        self.hd = hidden_dim
 
     def forward(self, x):
         packed_output, hidden = self.gru(x)
         hidden = torch.sigmoid(self.fc(hidden.squeeze(0)))
-        hidden = F.softmax(hidden)
+        hidden = torch.softmax(hidden, dim=1)
         return hidden
 
 
@@ -64,7 +66,6 @@ class VGGModule(nn.Module):
         x1 = self.net(x)
         y = self.layer1(x1)
         return y
-
 
 
 class MusicDataset(data.Dataset):

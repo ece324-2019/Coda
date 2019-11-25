@@ -41,7 +41,7 @@ def load_model(args, train_len):
 
 
 def load_data():
-    data = pd.read_pickle('part1.pkl')
+    data = pd.read_pickle('vggish.pkl')
     data.columns = ["normalized", "instruments"]
     # print(data.head())
     # print("shape: ", data.shape)
@@ -50,8 +50,8 @@ def load_data():
     labels = data["instruments"].values
     music_data = data["normalized"].values
 
-    music_data = np.append(music_data[:3364], music_data[3365:])
-    labels = np.append(labels[:3364], labels[3365:])
+    # music_data = np.append(music_data[:3364], music_data[3365:])
+    # labels = np.append(labels[:3364], labels[3365:])
 
     train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.2,
                                                                           random_state=1)
@@ -91,7 +91,7 @@ def main(args):
                 if torch.cuda.is_available():
                     feat, labels = feat.to(device), labels.to(device)
 
-                predict = model(feat.permute(2, 0, 1)).float()
+                predict = model(feat.permute(1, 0, 2)).float()
                 # Calculate loss
                 loss = loss_func(input=predict, target=labels)
                 running_loss += loss
@@ -130,7 +130,7 @@ def main(args):
                 true.extend(labels.cpu().numpy())
 
             optimizer.zero_grad()
-            predict = model(feat.permute(2, 0, 1))
+            predict = model(feat.permute(1, 0, 2))
 
             _, predicted = torch.max(predict.data, 1)
             if not gpu:
@@ -196,10 +196,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--eval_every', type=int, default=3)
-    parser.add_argument('--emb_dim', type=int, default=1025)
-    parser.add_argument('--hidden_dim', type=int, default=1025)
+    parser.add_argument('--emb_dim', type=int, default=128)
+    parser.add_argument('--hidden_dim', type=int, default=100)
 
     args = parser.parse_args()
 
