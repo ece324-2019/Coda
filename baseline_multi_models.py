@@ -105,17 +105,17 @@ def main(args):
 
 				preds = outputs > 0.5
 
-				# if args.pkl_file == "clean_mel_aug":
-				# 	if not gpu:
-				# 		# pred.extend(preds.float().numpy())
-				# 		pred.extend(outputs.max(1)[1].numpy())
+				if args.pkl_file == "clean_mel_aug":
+					if not gpu:
+						# pred.extend(preds.float().numpy())
+						pred.extend(outputs.max(1)[1].numpy())
 
-				# 		# outputs_ = outputs.detach().numpy()
-				# 		# for row in outputs_:
-				# 		# 	pred.extend(np.where(max(row)))    
-				# 		# pred.extend(np.where(preds.float() == 1))
-				# 	else:
-				# 		pred.extend(preds.cpu().numpy())
+						# outputs_ = outputs.detach().numpy()
+						# for row in outputs_:
+						# 	pred.extend(np.where(max(row)))    
+						# pred.extend(np.where(preds.float() == 1))
+					else:
+						pred.extend(preds.cpu().numpy())
 				# ipdb.set_trace()
 
 				loss = criterion(outputs.view(-1).float(), labels.view(-1).float())
@@ -212,12 +212,12 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--batch-size', type=int, default=64)
 	parser.add_argument('--lr', type=float, default=0.0001)
-	parser.add_argument('--epochs', type=int, default=50)
+	parser.add_argument('--epochs', type=int, default=30)
 	parser.add_argument('--model', type=str, default='baseline',
 						help="Model type: baseline,rnn,cnn (Default: baseline)")
 	parser.add_argument('--emb_dim', type=int, default=128)
 	parser.add_argument('--hidden_dim', type=int, default=100)
-	parser.add_argument('--pkl_file', type=str, default="11_multiclass", help="11_multiclass, 11_class, aug_mel, clean_aug_mel")
+	parser.add_argument('--pkl_file', type=str, default="clean_mel_aug", help="11_multiclass, 11_class, aug_mel, clean_mel_aug")
 
 	args = parser.parse_args()
 
