@@ -179,7 +179,7 @@ if __name__ == '__main__':
 	parser.add_argument('--epochs', type=int, default=50)
 	parser.add_argument('--model', type=str, default='baseline',
 						help="Model type: baseline,rnn,cnn (Default: baseline)")
-	parser.add_argument('--emb_dim', type=int, default=1028)
+	parser.add_argument('--emb_dim', type=int, default=128)
 	parser.add_argument('--hidden_dim', type=int, default=100)
 
 	args = parser.parse_args()
