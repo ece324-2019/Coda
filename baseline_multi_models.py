@@ -72,10 +72,6 @@ def main(args):
 		since = time()
 		best_model_wts = copy.deepcopy(model.state_dict())
 
-		if args.pkl_file == "clean_mel_aug":
-			true = []
-			pred = []
-
 		for epoch in range(num_epochs):
 			print('Epoch {}/{}'.format(epoch, num_epochs - 1))
 			print('-' * 10)
@@ -83,40 +79,54 @@ def main(args):
 			running_loss = 0.0
 			running_corrects = []
 
+			if args.matrix == "yes":
+				true = [[] for _ in range(11)]
+				pred = [[] for _ in range(11)]
+
 			for j, data in enumerate(train_loader):
 				inputs, labels = data
 		
 				if torch.cuda.is_available():
 					inputs = inputs.to(device)
 					labels = labels.to(device)
-					if args.pkl_file == "clean_mel_aug":
+					if args.matrix == "yes":
 						true.extend(labels.cpu().numpy())
 
-				if not gpu and args.pkl_file == "clean_mel_aug":
+				if not gpu and args.matrix == "yes":
 					# true.extend(predict.max(1)[1]
 					# true.extend(np.where(labels.float() == 1.0))
 					# true.extend(np.where(labels.float() == 1))
 					# true.extend(labels.numpy())
 
-					true.extend(labels.max(1)[1].numpy())
+					for row in labels:
+						# ipdb.set_trace()
+						for l in range(11):
+							true[l].append(row.numpy()[l])
+
+					# true.extend(labels.max(1)[1].numpy())
 
 				optimizer.zero_grad()
 				outputs = model(inputs)
 
 				preds = outputs > 0.5
 
-				if args.pkl_file == "clean_mel_aug":
-					if not gpu:
+				if args.matrix == "yes":
+					# if not gpu:
 						# pred.extend(preds.float().numpy())
-						pred.extend(outputs.max(1)[1].numpy())
+						# pred.extend(outputs.max(1)[1].numpy())
+						
+
+					for row in preds:
+						for l in range(11):
+							pred[l].append(row.float().numpy()[l])
 
 						# outputs_ = outputs.detach().numpy()
 						# for row in outputs_:
 						# 	pred.extend(np.where(max(row)))    
 						# pred.extend(np.where(preds.float() == 1))
-					else:
-						pred.extend(preds.cpu().numpy())
-				# ipdb.set_trace()
+					# else:
+					# 	pred.extend(preds.cpu().numpy())
+				
 
 				loss = criterion(outputs.view(-1).float(), labels.view(-1).float())
 
@@ -145,16 +155,19 @@ def main(args):
 			print('Train Loss: {:.4f} Train Acc: {:.4f} Val Loss: {:.4f} Val Acc: {:.4f}'.format(epoch_loss, epoch_acc, val_loss, val_acc))
 			print()
 
+			if args.matrix == "yes":
+				# print(true, "\n", pred)
+				for z in range(11):
+					print(instruments_list[z])
+					print(confusion_matrix(true[z], pred[z]))
+					# print(instruments_list)
+
 		time_elapsed = time() - since
 		print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 		print('Best val Acc: {:4f}'.format(max(plot_valid_acc)))
 
 		# ipdb.set_trace()
-		if args.pkl_file == "clean_mel_aug":
-			# print(true, "\n", pred)
-			print(confusion_matrix(true, pred))
-			print(instruments_list)
-
+	
 		model.load_state_dict(best_model_wts)
 		return model
 
@@ -212,12 +225,13 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--batch-size', type=int, default=64)
 	parser.add_argument('--lr', type=float, default=0.0001)
-	parser.add_argument('--epochs', type=int, default=30)
+	parser.add_argument('--epochs', type=int, default=10)
 	parser.add_argument('--model', type=str, default='baseline',
 						help="Model type: baseline,rnn,cnn (Default: baseline)")
 	parser.add_argument('--emb_dim', type=int, default=128)
 	parser.add_argument('--hidden_dim', type=int, default=100)
-	parser.add_argument('--pkl_file', type=str, default="clean_mel_aug", help="11_multiclass, 11_class, aug_mel, clean_mel_aug")
+	parser.add_argument('--pkl_file', type=str, default="11_multiclass", help="11_multiclass, 11_class, aug_mel, clean_mel_aug")
+	parser.add_argument('--matrix', type=str, default="no", help="yes, no")
 
 	args = parser.parse_args()
 
