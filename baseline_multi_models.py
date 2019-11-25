@@ -25,6 +25,9 @@ import argparse
 from time import time
 import ipdb
 
+# np.set_printoptions(threshold=np.nan)
+np.set_printoptions(threshold=np.inf)
+
 torch.manual_seed(0)
 
 gpu = False
@@ -69,6 +72,10 @@ def main(args):
 		since = time()
 		best_model_wts = copy.deepcopy(model.state_dict())
 
+		if args.pkl_file == "clean_mel_aug":
+			true = []
+			pred = []
+
 		for epoch in range(num_epochs):
 			print('Epoch {}/{}'.format(epoch, num_epochs - 1))
 			print('-' * 10)
@@ -78,22 +85,45 @@ def main(args):
 
 			for j, data in enumerate(train_loader):
 				inputs, labels = data
+		
 				if torch.cuda.is_available():
 					inputs = inputs.to(device)
 					labels = labels.to(device)
+					if args.pkl_file == "clean_mel_aug":
+						true.extend(labels.cpu().numpy())
+
+				if not gpu and args.pkl_file == "clean_mel_aug":
+					# true.extend(predict.max(1)[1]
+					# true.extend(np.where(labels.float() == 1.0))
+					# true.extend(np.where(labels.float() == 1))
+					# true.extend(labels.numpy())
+
+					true.extend(labels.max(1)[1].numpy())
 
 				optimizer.zero_grad()
 				outputs = model(inputs)
 
-				# _, preds = torch.max(outputs, 1)
 				preds = outputs > 0.5
+
+				# if args.pkl_file == "clean_mel_aug":
+				# 	if not gpu:
+				# 		# pred.extend(preds.float().numpy())
+				# 		pred.extend(outputs.max(1)[1].numpy())
+
+				# 		# outputs_ = outputs.detach().numpy()
+				# 		# for row in outputs_:
+				# 		# 	pred.extend(np.where(max(row)))    
+				# 		# pred.extend(np.where(preds.float() == 1))
+				# 	else:
+				# 		pred.extend(preds.cpu().numpy())
+				# ipdb.set_trace()
 
 				loss = criterion(outputs.view(-1).float(), labels.view(-1).float())
 
 				loss.backward()
 				optimizer.step()
-
-				# ipdb.set_trace()
+				
+				
 				running_loss += loss.item()
 				running_corrects.append(torch.sum((preds.float() == labels.float())*(labels.float() > 0)).item() / (1e-5 + (preds > 0).sum().item()))
 
@@ -119,10 +149,16 @@ def main(args):
 		print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 		print('Best val Acc: {:4f}'.format(max(plot_valid_acc)))
 
+		# ipdb.set_trace()
+		if args.pkl_file == "clean_mel_aug":
+			# print(true, "\n", pred)
+			print(confusion_matrix(true, pred))
+			print(instruments_list)
+
 		model.load_state_dict(best_model_wts)
 		return model
 
-	data = pd.read_pickle('11_multiclass.pkl')
+	data = pd.read_pickle('%s.pkl' % args.pkl_file)
 	# print(data['instruments'].value_counts())
 	labels = data["instruments"].values
 	music_data = data["normalized"].values
@@ -133,7 +169,7 @@ def main(args):
 	music_data = np.stack(music_data).reshape(-1, 128*65) #65*128, 1025 * 65
 
 	train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
-
+	# train_data, valid_data, train_labels, valid_labels = train_data[0:100], valid_data[0:100], train_labels[0:100], valid_labels[0:100]
 
 	train_set = MusicDataset(train_data, train_labels)
 	valid_set = MusicDataset(valid_data, valid_labels)
@@ -181,6 +217,7 @@ if __name__ == '__main__':
 						help="Model type: baseline,rnn,cnn (Default: baseline)")
 	parser.add_argument('--emb_dim', type=int, default=128)
 	parser.add_argument('--hidden_dim', type=int, default=100)
+	parser.add_argument('--pkl_file', type=str, default="11_multiclass", help="11_multiclass, 11_class, aug_mel, clean_aug_mel")
 
 	args = parser.parse_args()
 
