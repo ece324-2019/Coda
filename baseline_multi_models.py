@@ -183,8 +183,8 @@ def main(args):
 
 	music_data = np.stack(music_data).reshape(-1, 128*65) #65*128, 1025 * 65
 
-	train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
-	train_data, test_data, train_labels, test_labels = train_test_split(train_data, train_labels, test_size=0.1, random_state=1)
+	train_data, test_data, train_labels, test_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
+	train_data, valid_data, train_labels, valid_labels = train_test_split(train_data, train_labels, test_size=0.15, random_state=1)
 
 
 	# train_data, valid_data, train_labels, valid_labels = train_data[0:100], valid_data[0:100], train_labels[0:100], valid_labels[0:100]
