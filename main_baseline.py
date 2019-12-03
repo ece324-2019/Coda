@@ -17,7 +17,7 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
-from model import ConvNN
+# from model import ConvNN
 from model import MultiLP
 from model import MusicDataset
 
@@ -168,15 +168,15 @@ def main(args):
 	plt.ylabel("Loss")
 	bx.legend()
 	plt.show()
-	plt.savefig("baseline.png")
+	plt.savefig("baseline2.png")
 	plt.clf()
 
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--batch-size', type=int, default=64)
-	parser.add_argument('--lr', type=float, default=0.001)
-	parser.add_argument('--epochs', type=int, default=20)
+	parser.add_argument('--lr', type=float, default=0.0001)
+	parser.add_argument('--epochs', type=int, default=50)
 
 	args = parser.parse_args()
 
