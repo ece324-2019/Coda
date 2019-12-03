@@ -4,10 +4,9 @@ import torch.nn.functional as F
 import torch.utils.data as data
 from torchvision import models
 
-a = 1000
-b = 1000
-# a = 200
-# b = 83
+a = 5000
+b = 3000
+c = 1000
 output_layers = 1
 
 class MultiInstrumClass(nn.Module):
@@ -32,12 +31,14 @@ class MultiLP(nn.Module):
 		super(MultiLP, self).__init__()
 		self.fc1 = nn.Linear(input_size, a)
 		self.fc2 = nn.Linear(a, b)
-		self.fc3 = nn.Linear(b, output_layers)
+		self.fc3 = nn.Linear(b, c)
+		self.fc4 = nn.Linear(c, output_layers)
 
 	def forward(self, features):
 		x = torch.relu(self.fc1(features))
 		x = torch.relu(self.fc2(x))
-		x = torch.sigmoid(self.fc3(x))
+		x = torch.relu(self.fc3(x))
+		x = torch.sigmoid(self.fc4(x))
 		return x
 
 class ConvNN(nn.Module):
