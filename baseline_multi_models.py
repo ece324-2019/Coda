@@ -17,8 +17,9 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
-from model import ConvNN
+# from model import ConvNN
 from multi_models import MultiInstrumClass
+from multi_models import MultiLP
 from model import MusicDataset
 
 import argparse
@@ -82,6 +83,10 @@ def main(args):
 			if args.matrix == "yes":
 				true = [[] for _ in range(11)]
 				pred = [[] for _ in range(11)]
+			true_p = 0
+			true_n = 0
+			false_p = 0
+			false_n = 0
 
 			for j, data in enumerate(train_loader):
 				inputs, labels = data
@@ -93,46 +98,42 @@ def main(args):
 						true.extend(labels.cpu().numpy())
 
 				if not gpu and args.matrix == "yes":
-					# true.extend(predict.max(1)[1]
-					# true.extend(np.where(labels.float() == 1.0))
-					# true.extend(np.where(labels.float() == 1))
-					# true.extend(labels.numpy())
-
 					for row in labels:
-						# ipdb.set_trace()
 						for l in range(11):
 							true[l].append(row.numpy()[l])
 
-					# true.extend(labels.max(1)[1].numpy())
-
 				optimizer.zero_grad()
+				# ipdb.set_trace()
 				outputs = model(inputs)
 
 				preds = outputs > 0.5
 
 				if args.matrix == "yes":
-					# if not gpu:
-						# pred.extend(preds.float().numpy())
-						# pred.extend(outputs.max(1)[1].numpy())
-						
-
 					for row in preds:
 						for l in range(11):
 							pred[l].append(row.float().numpy()[l])
-
-						# outputs_ = outputs.detach().numpy()
-						# for row in outputs_:
-						# 	pred.extend(np.where(max(row)))    
-						# pred.extend(np.where(preds.float() == 1))
-					# else:
-					# 	pred.extend(preds.cpu().numpy())
 				
 
 				loss = criterion(outputs.view(-1).float(), labels.view(-1).float())
 
 				loss.backward()
 				optimizer.step()
+
 				
+				# for q in range(preds.shape[0]):
+				# 	for w in range(preds[0].shape[0]):
+				# 		if preds[q][w].float().item() == 1:
+				# 			if labels[q][w].float().item() == 1:
+				# 				true_p += 1
+				# 			elif labels[q][w].float().item() == 0:
+				# 				false_p += 1
+				# 		elif preds[q][w].float().item() == 0:
+				# 			if labels[q][w].float().item() == 1:
+				# 				false_n += 1
+				# 			elif labels[q][w].float().item() == 0:
+				# 				true_n += 1
+
+
 				
 				running_loss += loss.item()
 				running_corrects.append(torch.sum((preds.float() == labels.float())*(labels.float() > 0)).item() / (1e-5 + (preds > 0).sum().item()))
@@ -152,11 +153,15 @@ def main(args):
 			plot_valid_loss.append(val_loss)
 			nRec.append(epoch)
 
+			precision = true_p / (true_p + false_p)
+			recall = true_p / (true_p + false_n)
+
 			print('Train Loss: {:.4f} Train Acc: {:.4f} Val Loss: {:.4f} Val Acc: {:.4f}'.format(epoch_loss, epoch_acc, val_loss, val_acc))
+			print('TP: %d TN: %d FP: %d FN: %d' % (true_p,true_n,false_p,false_n))
+			print('Precision:  {:.4f} Recall  {:.4f}'.format(precision, recall))
 			print()
 
 			if args.matrix == "yes":
-				# print(true, "\n", pred)
 				for z in range(11):
 					print(instruments_list[z])
 					print(confusion_matrix(true[z], pred[z]))
@@ -166,19 +171,21 @@ def main(args):
 		print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 		print('Best val Acc: {:4f}'.format(max(plot_valid_acc)))
 
-		# ipdb.set_trace()
+		
 	
 		model.load_state_dict(best_model_wts)
 		return model
 
 	data = pd.read_pickle('%s.pkl' % args.pkl_file)
+
+
 	# print(data['instruments'].value_counts())
 	labels = data["instruments"].values
 	music_data = data["normalized"].values
 
 	# oneh_encoder = OneHotEncoder(categories="auto")
 	# labels = oneh_encoder.fit_transform(labels.reshape(-1, 1)).toarray()
-
+	
 	music_data = np.stack(music_data).reshape(-1, 128*65) #65*128, 1025 * 65
 
 	train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
@@ -190,6 +197,7 @@ def main(args):
 	valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
         
 	model_ft = MultiInstrumClass(128*65, 11, args.emb_dim, args.hidden_dim, args.model)
+	# model_ft = MultiLP(128*64)
 
 	if torch.cuda.is_available():
 		model.cuda()
@@ -225,7 +233,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--batch-size', type=int, default=64)
 	parser.add_argument('--lr', type=float, default=0.0001)
-	parser.add_argument('--epochs', type=int, default=10)
+	parser.add_argument('--epochs', type=int, default=50)
 	parser.add_argument('--model', type=str, default='baseline',
 						help="Model type: baseline,rnn,cnn (Default: baseline)")
 	parser.add_argument('--emb_dim', type=int, default=128)
