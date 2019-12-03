@@ -17,7 +17,6 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
-# from model import ConvNN
 from multi_models import MultiInstrumClass
 from multi_models import MultiLP
 from model import MusicDataset
@@ -26,7 +25,6 @@ import argparse
 from time import time
 import ipdb
 
-# np.set_printoptions(threshold=np.nan)
 np.set_printoptions(threshold=np.inf)
 
 torch.manual_seed(0)
@@ -64,7 +62,6 @@ def evaluate(model, dataloader):
 		epoch_loss = running_loss / len(running_corrects)
 		epoch_acc = sum(running_corrects)/ len(running_corrects)
 
-
 	return epoch_loss, epoch_acc
 
 
@@ -83,10 +80,11 @@ def main(args):
 			if args.matrix == "yes":
 				true = [[] for _ in range(11)]
 				pred = [[] for _ in range(11)]
-			true_p = 0
-			true_n = 0
-			false_p = 0
-			false_n = 0
+			if args.TFPN == "yes":
+				true_p = 0
+				true_n = 0
+				false_p = 0
+				false_n = 0
 
 			for j, data in enumerate(train_loader):
 				inputs, labels = data
@@ -96,18 +94,18 @@ def main(args):
 					labels = labels.to(device)
 					if args.matrix == "yes":
 						true.extend(labels.cpu().numpy())
-
+				
+				# Creates confusion matrix
 				if not gpu and args.matrix == "yes":
 					for row in labels:
 						for l in range(11):
 							true[l].append(row.numpy()[l])
 
 				optimizer.zero_grad()
-				# ipdb.set_trace()
 				outputs = model(inputs)
-
 				preds = outputs > 0.5
 
+				# Creates confusion matrix
 				if args.matrix == "yes":
 					for row in preds:
 						for l in range(11):
@@ -119,22 +117,21 @@ def main(args):
 				loss.backward()
 				optimizer.step()
 
-				
-				# for q in range(preds.shape[0]):
-				# 	for w in range(preds[0].shape[0]):
-				# 		if preds[q][w].float().item() == 1:
-				# 			if labels[q][w].float().item() == 1:
-				# 				true_p += 1
-				# 			elif labels[q][w].float().item() == 0:
-				# 				false_p += 1
-				# 		elif preds[q][w].float().item() == 0:
-				# 			if labels[q][w].float().item() == 1:
-				# 				false_n += 1
-				# 			elif labels[q][w].float().item() == 0:
-				# 				true_n += 1
+				# Calculates true/false positive/negative
+				if args.TFPN == "yes":
+					for q in range(preds.shape[0]):
+						for w in range(preds[0].shape[0]):
+							if preds[q][w].float().item() == 1:
+								if labels[q][w].float().item() == 1:
+									true_p += 1
+								elif labels[q][w].float().item() == 0:
+									false_p += 1
+							elif preds[q][w].float().item() == 0:
+								if labels[q][w].float().item() == 1:
+									false_n += 1
+								elif labels[q][w].float().item() == 0:
+									true_n += 1
 
-
-				
 				running_loss += loss.item()
 				running_corrects.append(torch.sum((preds.float() == labels.float())*(labels.float() > 0)).item() / (1e-5 + (preds > 0).sum().item()))
 
@@ -159,43 +156,40 @@ def main(args):
 			recall = true_p / (true_p + false_n)
 
 			print('Train Loss: {:.4f} Train Acc: {:.4f} Val Loss: {:.4f} Val Acc: {:.4f}'.format(epoch_loss, epoch_acc, val_loss, val_acc))
-			print('TP: %d TN: %d FP: %d FN: %d' % (true_p,true_n,false_p,false_n))
-			print('Precision:  {:.4f} Recall  {:.4f}'.format(precision, recall))
 			print('Test Loss: {:.4f} Test Acc: {:.4f}'.format(test_loss, test_acc))
+			
+			# Prints true/false positive/negative, precision, recall
+			if args.TFPN == "yes":
+				print('TP: %d TN: %d FP: %d FN: %d' % (true_p,true_n,false_p,false_n))
+				print('Precision:  {:.4f} Recall  {:.4f}'.format(precision, recall))
+			
 			print()
 
+			# Prints confusion matrix
 			if args.matrix == "yes":
 				for z in range(11):
 					print(instruments_list[z])
 					print(confusion_matrix(true[z], pred[z]))
 					# print(instruments_list)
+				print()
 
 		time_elapsed = time() - since
 		print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 		print('Best val Acc: {:4f}'.format(max(plot_valid_acc)))
-
-		
 	
 		model.load_state_dict(best_model_wts)
 		return model
 
-	data = pd.read_pickle('%s.pkl' % args.pkl_file)
-
+	data = pd.read_pickle('data/%s.pkl' % args.pkl_file)
 
 	# print(data['instruments'].value_counts())
 	labels = data["instruments"].values
 	music_data = data["normalized"].values
-
-	# oneh_encoder = OneHotEncoder(categories="auto")
-	# labels = oneh_encoder.fit_transform(labels.reshape(-1, 1)).toarray()
 	
 	music_data = np.stack(music_data).reshape(-1, 128*65) #65*128, 1025 * 65
 
 	train_data, test_data, train_labels, test_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
 	train_data, valid_data, train_labels, valid_labels = train_test_split(train_data, train_labels, test_size=0.15, random_state=1)
-
-
-	# train_data, valid_data, train_labels, valid_labels = train_data[0:100], valid_data[0:100], train_labels[0:100], valid_labels[0:100]
 
 	train_set = MusicDataset(train_data, train_labels)
 	valid_set = MusicDataset(valid_data, valid_labels)
@@ -205,7 +199,6 @@ def main(args):
 	test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=True)
 
 	model_ft = MultiInstrumClass(128*65, 11, args.emb_dim, args.hidden_dim, args.model)
-	# model_ft = MultiLP(128*64)
 
 	if torch.cuda.is_available():
 		model_ft.to(device)
@@ -233,7 +226,7 @@ def main(args):
 	plt.ylabel("Loss")
 	bx.legend()
 	plt.show()
-	plt.savefig("%s.png" % args.model)
+	plt.savefig("Images/%s.png" % args.model)
 	plt.clf()
 
 
@@ -247,7 +240,8 @@ if __name__ == '__main__':
 	parser.add_argument('--emb_dim', type=int, default=128)
 	parser.add_argument('--hidden_dim', type=int, default=100)
 	parser.add_argument('--pkl_file', type=str, default="11_multiclass", help="11_multiclass, 11_class, aug_mel, clean_mel_aug")
-	parser.add_argument('--matrix', type=str, default="no", help="yes, no")
+	parser.add_argument('--matrix', type=str, default="no", help="yes, no; prints confusion matrix")
+	parser.add_argument('--TFPN', type=str, default="no", help="yes, no; prints true/false postive/negatives, recall, and precision")
 
 	args = parser.parse_args()
 
