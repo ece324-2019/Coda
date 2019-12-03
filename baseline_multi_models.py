@@ -145,6 +145,8 @@ def main(args):
 
 			model.eval()
 			val_loss, val_acc = evaluate(model, valid_loader)
+			if epoch == num_epochs - 1:
+				test_loss, test_acc = evaluate(model, test_loader)
 			model.train()
 
 			plot_train_acc.append(epoch_acc)
@@ -159,6 +161,7 @@ def main(args):
 			print('Train Loss: {:.4f} Train Acc: {:.4f} Val Loss: {:.4f} Val Acc: {:.4f}'.format(epoch_loss, epoch_acc, val_loss, val_acc))
 			print('TP: %d TN: %d FP: %d FN: %d' % (true_p,true_n,false_p,false_n))
 			print('Precision:  {:.4f} Recall  {:.4f}'.format(precision, recall))
+			print('Test Loss: {:.4f} Test Acc: {:.4f}'.format(test_loss, test_acc))
 			print()
 
 			if args.matrix == "yes":
@@ -188,19 +191,24 @@ def main(args):
 	
 	music_data = np.stack(music_data).reshape(-1, 128*65) #65*128, 1025 * 65
 
-	train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
+	train_data, test_data, train_labels, test_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
+	train_data, valid_data, train_labels, valid_labels = train_test_split(train_data, train_labels, test_size=0.15, random_state=1)
+
+
 	# train_data, valid_data, train_labels, valid_labels = train_data[0:100], valid_data[0:100], train_labels[0:100], valid_labels[0:100]
 
 	train_set = MusicDataset(train_data, train_labels)
 	valid_set = MusicDataset(valid_data, valid_labels)
+	test_set = MusicDataset(test_data, test_labels)
 	train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
 	valid_loader = DataLoader(valid_set, batch_size=args.batch_size, shuffle=True)
-        
+	test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=True)
+
 	model_ft = MultiInstrumClass(128*65, 11, args.emb_dim, args.hidden_dim, args.model)
 	# model_ft = MultiLP(128*64)
 
 	if torch.cuda.is_available():
-		model.cuda()
+		model_ft.to(device)
 
 	plot_train_acc, plot_valid_acc, plot_train_loss, plot_valid_loss, nRec = [], [], [], [], []
 

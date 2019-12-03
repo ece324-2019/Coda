@@ -43,7 +43,7 @@ def load_model(args, train_len):
 
 
 def load_data():
-    data = pd.read_pickle('part1.pkl')
+    data = pd.read_pickle('vggish.pkl')
     data.columns = ["normalized", "instruments"]
     # print(data.head())
     # print("shape: ", data.shape)
@@ -52,10 +52,10 @@ def load_data():
     labels = data["instruments"].values
     music_data = data["normalized"].values
 
-    music_data = np.append(music_data[:3364], music_data[3365:])
-    labels = np.append(labels[:3364], labels[3365:])
+    # music_data = np.append(music_data[:3364], music_data[3365:])
+    # labels = np.append(labels[:3364], labels[3365:])
 
-    train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.2, random_state=1)
+    train_data, valid_data, train_labels, valid_labels = train_test_split(music_data, labels, test_size=0.1, random_state=1)
 
     # np.savetxt('bad.csv', music_train[3364], delimiter=',')
     # for i in range(music_train.shape[0]):
@@ -132,7 +132,8 @@ def main(args):
                 true.extend(labels.cpu().numpy())
 
             optimizer.zero_grad()
-            predict = model(feat.unsqueeze(1))
+            feat = feat.unsqueeze(1).permute(0,1,3,2)
+            predict = model(feat)
             _, predicted = torch.max(predict.data, 1)
             if not gpu:
                 pred.extend(predicted.numpy())
